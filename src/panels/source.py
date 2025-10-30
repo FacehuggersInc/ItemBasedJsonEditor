@@ -322,6 +322,8 @@ class SourcesPanel(ft.Container):
 		self.loading_thread = None
 		self.source_select.disabled = False
 		self.source_select.update()
+		self.search_field.disabled = False
+		self.search_field.update()
 
 	def search_load_items(self, items):
 		self.file_grid.controls = items
@@ -339,6 +341,8 @@ class SourcesPanel(ft.Container):
 		self.loading_items = True
 		self.source_select.disabled = True
 		self.source_select.update()
+		self.search_field.disabled = True
+		self.search_field.update()
 		self.loading_thread = Thread(target = self.load_items_thread)
 		self.loading_thread.start()
 
@@ -387,7 +391,7 @@ class SourcesPanel(ft.Container):
 
 		minCatch = 0.75
 		source = self.get_source_selection()
-		if not source: return
+		if not source or self.loading_items: return
 		if source[1] == "random": return
 
 		query = (self.search_field.value or "").strip()
