@@ -137,6 +137,8 @@ class SourceItem(ft.Container):
 				os.startfile( os.path.dirname(path) )
 			else:
 				os.startfile( path )
+		else:
+			self.dialog._page.app.notify(f"Source path does not exist. Cannot Open Folder", 3000)
 
 	def load_file_result(self, e: ft.FilePickerResultEvent = None):
 		"""A Callback / Call to load data into Navigator and set loaded_path"""

@@ -791,11 +791,15 @@ class KeyValuePair(ft.Container):
 			if utility.looks_like_path(val): #Path
 				def __open_value(field):
 					"""Opens a file or folder in Windows Explorer."""
-					path = os.path.normpath(field.value)
-					if os.path.isdir(path):
-						os.startfile(path)  # opens the folder
-					elif os.path.isfile(path):
-						os.startfile(os.path.dirname(path))  # opens its parent folder
+					if os.path.exists(field.value):
+						path = os.path.normpath(field.value)
+						if os.path.isdir(path):
+							os.startfile(path)  # opens the folder
+						elif os.path.isfile(path):
+							os.startfile(os.path.dirname(path))  # opens its parent folder
+					else:
+						self.app.notify(f"Field Path is likely a Source Path Spliced Value AND OR does not exist.", 3000)
+					
 
 				self.value_field = ft.TextField(
 					expand=True, 
