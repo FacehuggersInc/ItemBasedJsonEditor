@@ -1,6 +1,6 @@
 This project was meant to handle and easily modifiy JSON for a lot of game realted items, making it easy to make new items and adjust JSON. 
 
-JSON files can only be accepted by this Application if they follow this data Structure in JSON. root (dict) > key : list [dict, dict, dict, ...]. This is currently strict requirement, it will not load if any key in the root does not have a list value AND if any item within that list is not another dict.
+JSON files can only be accepted by this Application if they follow this data Structure in JSON. root (dict) > key : list [dict, dict, dict, ...]. This is currently a strict requirement, it will not load if any key in the root does not have a list value AND if any item within that list is not another dict.
 
 ```json
 {
@@ -31,6 +31,8 @@ These files can include multiple root-level keys (like weapons) with easy switch
   * None – Use files directly from the source without modification.
 * Provides a clean way to manage multiple data folders and item sets
 * Includes Image Previews and a Rememberance of what preview (source file) was there even when using Path Splicing.
+
+This project is open to suggestions and of course report issues.
 
 
 
