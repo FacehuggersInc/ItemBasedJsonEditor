@@ -208,9 +208,9 @@ class EnvironmentPage(ft.Column):
 				with open(file_to_load, "r") as file:
 					data = json.load(file)
 					if self.check_as_proper_json(data):
-						self.loaded_paths.append(file_to_load)
-						self.navigator.load( file_to_load, data )
 						if not (file_to_load in self.recent_files):
+							self.loaded_paths.append(file_to_load)
+							self.navigator.load( file_to_load, data )
 							self.app.LOGGER.info(f"Loaded JSON at {file}")
 							self.recent_files.append(file_to_load)
 							self.recent_files = self.recent_files[-10:]

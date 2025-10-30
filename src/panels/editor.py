@@ -32,6 +32,35 @@ class EditorInstanceTab(ft.FloatingActionButton):
 			on_click=None
 		)
 
+		self.split_btn = ft.FloatingActionButton(
+			width = 30,
+			height = 35,
+			bgcolor = ft.Colors.TRANSPARENT,
+			shape = ft.RoundedRectangleBorder(radius = 100),
+			disabled_elevation=True,
+			elevation = 0,
+			content = ft.Icon(
+				ft.Icons.VERTICAL_SPLIT_ROUNDED,
+				color = "white",
+			),
+			tooltip = Tooltip(f"Split '{self.__name}'"),
+			on_click = self.split
+		)
+		self.close_btn = ft.FloatingActionButton(
+			width = 30,
+			height = 35,
+			bgcolor = ft.Colors.TRANSPARENT,
+			shape = ft.RoundedRectangleBorder(radius = 100),
+			disabled_elevation=True,
+			elevation = 0,
+			content = ft.Icon(
+				ft.Icons.CLOSE,
+				color = "white",
+			),
+			tooltip = Tooltip(f"Close '{self.__name}'"),
+			on_click = self.remove_self
+		)
+
 		self.buttons = ft.Row(
 			visible=False,
 			alignment = ft.MainAxisAlignment.END,
@@ -39,34 +68,8 @@ class EditorInstanceTab(ft.FloatingActionButton):
 			top = -10,
 			height = 45,
 			controls = [
-				ft.FloatingActionButton(
-					width = 30,
-					height = 35,
-					bgcolor = ft.Colors.TRANSPARENT,
-					shape = ft.RoundedRectangleBorder(radius = 100),
-					disabled_elevation=True,
-					elevation = 0,
-					content = ft.Icon(
-						ft.Icons.VERTICAL_SPLIT_ROUNDED,
-						color = "white",
-					),
-					tooltip = Tooltip(f"Split '{self.__name}'"),
-					on_click = self.split
-				),
-				ft.FloatingActionButton(
-					width = 30,
-					height = 35,
-					bgcolor = ft.Colors.TRANSPARENT,
-					shape = ft.RoundedRectangleBorder(radius = 100),
-					disabled_elevation=True,
-					elevation = 0,
-					content = ft.Icon(
-						ft.Icons.CLOSE,
-						color = "white",
-					),
-					tooltip = Tooltip(f"Close '{self.__name}'"),
-					on_click = self.remove_self
-				)
+				self.split_btn,
+				self.close_btn
 			]
 		)
 
@@ -116,6 +119,13 @@ class EditorInstanceTab(ft.FloatingActionButton):
 			),
 			on_click = self.switch
 		)
+
+	def update_name(self, name):
+		self.name.value = name
+		self.tooltip = Tooltip(name)
+		self.split_btn.tooltip = Tooltip(name)
+		self.close_btn.tooltip = Tooltip(name)
+		self.update()
 
 	def mark_as_saved(self):
 		self.__save_marker.visible = False
@@ -299,10 +309,7 @@ class EditorInstance(ft.Container):
 			except: pass
 
 			try:
-
-				self.instance_tab.name.value = name
-				self.instance_tab.tooltip = Tooltip(name)
-				self.instance_tab.update()
+				self.instance_tab.update_name(name)
 			except: pass
 
 			for ctrl in self.pairs.controls:
@@ -502,7 +509,6 @@ class EditorPanel(ft.Container):
 		#If Opened Already
 		for instance_tab in self.instance_tabs.controls:
 			if instance_tab.instance.source_item.name.value == item.name.value:
-				print(instance_tab.instance.source_item.name.value, " ? ", item.name.value)
 				for itab in self.instance_tabs.controls:
 					itab.un_select()
 				instance_tab.select()

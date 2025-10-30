@@ -233,7 +233,6 @@ class SourcesDialog(DialogTemplate):
 		)
 
 		for path, item in self.raw_sources.items():
-			print(f"Loaded SourceItem: {path, item}")
 			for type in item:
 				self.sources.controls.append(
 					SourceItem(self, path, type, item[type])
