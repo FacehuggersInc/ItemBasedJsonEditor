@@ -143,20 +143,16 @@ class EditorInstanceTab(ft.FloatingActionButton):
 		except: pass
 
 	def switch(self, event):
-		for tab in self.parent.controls:
-			tab.un_select()
-		self.select()
-
 		self.swticher(self.instance)
 
 	def split(self, event):
-		for tab in self.parent.controls:
-			tab.un_select()
-		self.select()
-
 		self.swticher(self.instance, True)
 
 	def select(self):
+		self.bgcolor = ft.Colors.BROWN_500
+		self.update()
+
+	def select_as_split_tab(self):
 		self.bgcolor = ft.Colors.BROWN_500
 		self.update()
 
@@ -477,6 +473,14 @@ class EditorPanel(ft.Container):
 		new_instance.load()
 		self.holding.clear()
 
+		for instance_tab in self.instance_tabs.controls:
+			instance_tab.un_select()
+			if instance_tab.instance in self.instances.controls:
+				if len(self.instances.controls) < 2:
+					instance_tab.select()
+				else:
+					instance_tab.select_as_split_tab()
+
 	def switch_instance(self, new_instance:EditorInstance = None, as_split:bool = False):
 		if new_instance in self.instances.controls: return
 
@@ -499,6 +503,14 @@ class EditorPanel(ft.Container):
 		self.instances.update()
 		new_instance.load()
 
+		for instance_tab in self.instance_tabs.controls:
+			instance_tab.un_select()
+			if instance_tab.instance in self.instances.controls:
+				if len(self.instances.controls) < 2:
+					instance_tab.select()
+				else:
+					instance_tab.select_as_split_tab()
+
 	def new_instance(self, item:KeyedItem, as_split:bool = False):
 		"""Loads Editor Controls"""
 		gc.collect()
@@ -509,9 +521,6 @@ class EditorPanel(ft.Container):
 		#If Opened Already
 		for instance_tab in self.instance_tabs.controls:
 			if instance_tab.instance.source_item.name.value == item.name.value:
-				for itab in self.instance_tabs.controls:
-					itab.un_select()
-				instance_tab.select()
 				self.switch_instance(instance_tab.instance, as_split)
 				return
 		
@@ -527,8 +536,5 @@ class EditorPanel(ft.Container):
 		self.instance_tabs.controls.append(tab)
 		self.instance_tabs.update()
 
-		for instance_tab in self.instance_tabs.controls:
-			instance_tab.un_select()
-		tab.select()
-
 		self.switch_instance(instance, as_split = not len(self.instances.controls) < 2 or as_split)
+
