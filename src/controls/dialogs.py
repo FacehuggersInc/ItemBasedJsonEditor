@@ -786,7 +786,7 @@ class ItemAdjustmentDialog(DialogTemplate):
 				expand = True,
 				controls = [
 					ft.Text(
-						"New KEYS will be added and KEYS missing from this template will be REMOVED from ALL items.",
+						f"New KEYS will be added and KEYS missing from this template will be REMOVED from ALL items in '{self.group[3].split(":")[0].strip()}'",
 						text_align=ft.TextAlign.CENTER,
 						style=ft.TextStyle(
 							size = 19,
