@@ -32,5 +32,6 @@ These files can include multiple root-level keys (like weapons) with easy switch
 * Provides a clean way to manage multiple data folders and item sets
 * Includes Image Previews and a Rememberance of what preview (source file) was there even when using Path Splicing.
 
+This project is open to suggestions and of course report issues.
 
 
