@@ -222,7 +222,6 @@ class EnvironmentPage(ft.Column):
 		"""Opens File Explorer, Calls load_file_result when done"""
 		self.app.open_explorer(
 			"Load a JSON File",
-			".",
 			self.load_file_result,
 			ExplorerTypes.FILES,
 			allow_multiple = True,
@@ -271,10 +270,10 @@ class EnvironmentPage(ft.Column):
 		self.__save_as_holding = (path, data)
 		self.app.open_explorer(
 			"Choose a JSON File / Rename",
-			os.path.dirname(path),
 			self.save_as,
 			ExplorerTypes.FILES,
-			type = ft.FilePickerFileType.ANY
+			type = ft.FilePickerFileType.ANY,
+			initial_directory = os.path.dirname(path),
 		)
 
 	def open_save_file_as_dialog(self, event = None):

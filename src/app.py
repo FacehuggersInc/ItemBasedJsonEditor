@@ -55,14 +55,14 @@ class ItemBasedJsonEditorApp():
 		except Exception as e:
 			self.LOGGER.error("Handled File Manager Callback Error: {e}", include_traceback=True)
 
-	def open_explorer(self, title:str, initial_directory:str, callback:Callable, looking_for:ExplorerTypes, allow_multiple:bool = False, type:ft.FilePickerFileType = None, accepted_types:list[str] = []) -> None:
+	def open_explorer(self, title:str, callback:Callable, looking_for:ExplorerTypes, allow_multiple:bool = False, type:ft.FilePickerFileType = None, accepted_types:list[str] = [], initial_directory:str = None) -> None:
 		"""Opens the File Explorer to get Folders or Files"""
 		self.FILEMANAGER.on_result = lambda e,: self.__file_manager_callback(e, callback)
 		match looking_for:
 			case ExplorerTypes.FILES:
 				self.FILEMANAGER.pick_files(
 					dialog_title=title,
-					initial_directory = self.global_path,
+					initial_directory = self.global_path if not initial_directory else initial_directory,
 					file_type = type,
 					allow_multiple=allow_multiple,
 					allowed_extensions = accepted_types
@@ -70,7 +70,7 @@ class ItemBasedJsonEditorApp():
 			case ExplorerTypes.FOLDER:
 				self.FILEMANAGER.get_directory_path(
 					dialog_title=title,
-					initial_directory = self.global_path
+					initial_directory = self.global_path if not initial_directory else initial_directory
 				)
 	
 	def get_dialog(self):

@@ -148,7 +148,6 @@ class SourceItem(ft.Container):
 		"""Opens File Explorer, Calls load_file_result when done"""
 		self.dialog._page.app.open_explorer(
 			"Choose a Folder ...",
-			"C:\\",
 			self.load_file_result,
 			ExplorerTypes.FOLDER
 		)
