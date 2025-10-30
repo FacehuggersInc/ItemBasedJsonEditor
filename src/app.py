@@ -89,7 +89,6 @@ class ItemBasedJsonEditorApp():
 			if close:
 				if current:
 					self.CORE.close(current)
-					self.CORE.update()
 					time.sleep(0.05)
 				self.DIALOGS.clear()
 				self.last_dialog = None
@@ -100,13 +99,12 @@ class ItemBasedJsonEditorApp():
 				if not self.DIALOGS:
 					return
 				self.CORE.close(current)
-				self.CORE.update()
+				#self.CORE.update()
 				time.sleep(0.05)
 				self.DIALOGS.pop()
 				if self.DIALOGS:
 					prev = self.DIALOGS[-1]
 					self.CORE.open(prev)
-					self.CORE.update()
 					self.last_dialog = prev
 				else:
 					self.last_dialog = None
@@ -115,7 +113,6 @@ class ItemBasedJsonEditorApp():
 			# --- Case 3: Same dialog → toggle (close it) ---
 			if current == dialog:
 				self.CORE.close(current)
-				self.CORE.update()
 				time.sleep(0.05)
 				self.DIALOGS.pop()
 				self.last_dialog = self.DIALOGS[-1] if self.DIALOGS else None
@@ -127,13 +124,11 @@ class ItemBasedJsonEditorApp():
 
 			if current:
 				self.CORE.close(current)
-				self.CORE.update()
 				time.sleep(0.07)  # give Flet time to commit the close
 
 			self.DIALOGS.append(dialog)
 			self.last_dialog = dialog
 			self.CORE.open(dialog)
-			self.CORE.update()
 			time.sleep(0.03)  # brief settle delay
 
 		finally:
@@ -148,7 +143,7 @@ class ItemBasedJsonEditorApp():
 			)
 			self.CORE.open(bar)
 		except Exception as e:
-			self.LOGGER.error("Handled Notify Error: {e}", include_traceback=True)
+			self.LOGGER.error(f"Handled Notify Error: {e}", include_traceback=True)
 	
 	def copy_to_clipboard(self, text:str):
 		self.CORE.set_clipboard(text)
@@ -180,29 +175,23 @@ class ItemBasedJsonEditorApp():
 
 	def run(self):
 		"""Entrypoint to Application"""
-		try:
-			ft.app(target=self.build) ## BLOCKING
-		except Exception as e:
-			self.LOGGER.error(f"An UpperLevel {type(e)} Error occurred", True)
+		ft.app(target=self.build) ## BLOCKING
 
-		try:
-			#Reliable Save
-			self.PAGE.editor.save()
-			self.PAGE.save_all()
+		#Reliable Save
+		self.PAGE.editor.save()
+		self.PAGE.save_all()
 
-			#Check if SourcesDialog Dialog is Open and Save Sources Anyway
-			dialog = self.get_dialog()
-			if dialog and isinstance(dialog, SourcesDialog):
-				self.LOGGER.info("Manually Saving Sources ...")
-				self.PAGE.save_sources(dialog)
+		#Check if SourcesDialog Dialog is Open and Save Sources Anyway
+		dialog = self.get_dialog()
+		if dialog and isinstance(dialog, SourcesDialog):
+			self.LOGGER.info("Manually Saving Sources ...")
+			self.PAGE.save_sources(dialog)
 
-			#Save Data
-			self.DATA["recent"] = self.PAGE.recent_files
-			self.DATA["lastdir"] = self.global_path
-			with open("settings.json", "w") as datafile:
-				json.dump(self.DATA, datafile, indent = 4)
-		except Exception as e:
-			self.LOGGER.error(f"An UpperLevel {type(e)} Error occurred While Saving", True)
+		#Save Data
+		self.DATA["recent"] = self.PAGE.recent_files
+		self.DATA["lastdir"] = self.global_path
+		with open("settings.json", "w") as datafile:
+			json.dump(self.DATA, datafile, indent = 4)
 
 		self.LOGGER.log("Saved Instances.")
 		self.LOGGER.close()
