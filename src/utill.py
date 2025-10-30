@@ -277,41 +277,29 @@ def sanitize_to_json_string(s: str) -> str:
     """Try to coerce common "almost JSON" strings into valid JSON text.
     Returns a JSON-compatible string (not parsed). Raises ValueError if impossible."""
     if not isinstance(s, str):
-        raise TypeError("sanitize_to_json_string expects a string")
+        return "{}"
 
-    # 1) Fast path
     try:
         json.loads(s)
-        return s  # already valid JSON
+        return s
     except Exception:
         pass
 
     t = s.strip()
 
-    # 2) strip BOM if present
     t = _RE_BOM.sub('', t)
 
-    # 3) Remove JS-style comments (// ... and /* ... */)
     t = _RE_JS_SINGLE_LINE_COMMENT.sub('', t)
     t = _RE_JS_MULTI_LINE_COMMENT.sub('', t)
 
-    # 4) Remove trailing commas like {"a":1,}
     t = _RE_TRAILING_COMMAS.sub('', t)
 
-    # 5) Convert Python None/True/False to JSON null/true/false
     t = _RE_PY_NONE_TRUE_FALSE.sub(_replace_python_literals, t)
 
-    # 6) Quote unquoted object keys: { key: 1 } -> { "key": 1 }
-    # This is conservative: only matches keys that look like identifiers.
     def _quote_key(m):
         return f'{m.group("prefix")}"{m.group("key")}" :'
     t = _RE_UNQUOTED_KEYS.sub(lambda m: m.group("prefix") + '"' + m.group("key") + '":', t)
 
-    # 7) Convert single-quoted strings to double-quoted ones where safe.
-    # We do a conservative replacement only for string-like tokens:
-    #    'some text'  -> "some text"
-    # But avoid touching something that already contains unescaped double quotes.
-    # This regex matches single-quoted sequences not containing an unescaped single quote.
     t = re.sub(r"""'([^'\\]*(?:\\.[^'\\]*)*)'""", r'"\1"', t)
 
     # 8) Now try json.loads again
@@ -321,14 +309,11 @@ def sanitize_to_json_string(s: str) -> str:
     except Exception:
         pass
 
-    # 9) Last safe fallback: try ast.literal_eval (works for Python literal dict/list)
-    # If that succeeds, convert to JSON text via json.dumps
     try:
         py_obj = ast.literal_eval(t)
         return json.dumps(py_obj)
     except Exception as e:
-        # Give up with helpful message
-        raise ValueError(f"Could not coerce string to JSON: {e!s}")
+        return s
 
 def loads_flexible(s: str):
     """Return Python object parsed from s, using sanitization fallbacks."""

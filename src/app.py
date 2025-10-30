@@ -193,7 +193,7 @@ class ItemBasedJsonEditorApp():
 			#Check if SourcesDialog Dialog is Open and Save Sources Anyway
 			dialog = self.get_dialog()
 			if dialog and isinstance(dialog, SourcesDialog):
-				self.LOGGER.log("Manually Saving Sources ...")
+				self.LOGGER.info("Manually Saving Sources ...")
 				self.PAGE.save_sources(dialog)
 
 			#Save Data
