@@ -1,6 +1,6 @@
-This project was meant to handle and easily modifiy JSON for a lot of game realted items, making it easy to make new items and adjust JSON. 
+This project was meant to handle and easily modify JSON for a lot of game-related realted items, making it easy to create new items and adjust JSON.
 
-JSON files can only be accepted by this Application if they follow this data Structure in JSON. root (dict) > key : list [dict, dict, dict, ...]. This is currently a strict requirement, it will not load if any key in the root does not have a list value AND if any item within that list is not another dict.
+JSON files can only be accepted by this application if they follow this data structure in JSON: root (dict) > key : list [dict, dict, dict, ...]. This is currently a strict requirement; it will not load if any key in the root does not have a list value, and if any item within that list is not another dict.
 
 ```json
 {
@@ -11,15 +11,15 @@ JSON files can only be accepted by this Application if they follow this data Str
   ]
 }
 ```
-These files can include multiple root-level keys (like weapons) with easy switching between them AND has the ability to also load multiple files into the App without issue on saving them.
+These files can include multiple root-level keys (like weapons) with easy switching between them AND have the ability to also load multiple files into the App without issue when saving them.
 
 ### Key Features
 #### Item Editing
 * Easily modify key-value pairs within any item.
-* Easily copy and paste JSON directly from Key Value Pairs or the enitre structure
-* Easily paste new JSON or LIST into a string field to auto convert to dict or list
-* Key Value Pair Fields auto convert to detected type (int, float, str ...) so there are no type conversion issues
-* Create completly new items or duplicate existing ones
+* Easily copy and paste JSON directly from Key-Value Value Pairs or the entire structure
+* Easily paste new JSON or list into a string field to auto-convert convert to dict or list
+* Key-Value Value Pair fields auto-convert convert to detected type (int, float, str ...) so there are no type conversion issues
+* Create completely new items or duplicate existing ones
 * Apply global modifications to make all items share the same data structure.
 * Simplifies mass editing of JSON-based item lists.
 
@@ -30,9 +30,10 @@ These files can include multiple root-level keys (like weapons) with easy switch
   * Random – Randomly select a file from the source folder.
   * None – Use files directly from the source without modification.
 * Provides a clean way to manage multiple data folders and item sets
-* Includes Image Previews and a Rememberance of what preview (source file) was there even when using Path Splicing.
+* Includes Image Previews and a Remembrance of what preview (source file) was there even when using Path Splicing.
 
-This project is open to suggestions and of course report issues.
+This project is open to suggestions and, of course, to report issues.
+
 
 
 
