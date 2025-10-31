@@ -201,7 +201,7 @@ class SourcesPanel(ft.Container):
 		self.target.value_field.value = mod_result
 		self.target.instance.mark_as_edited()
 
-		self._page.app.LOGGER.info(f"SourcePanel is setting a source <lk:{self.target.key}:{str(self.target.type)}> as <{mod_result}:expected> from modification <type:{mod}> w/ applied <data:{data}>")
+		self._page.app.LOGGER.info(f"SourcePanel is setting a source <lk:{self.target.key_}:{str(self.target.type)}> as <{mod_result}:expected> from modification <type:{mod}> w/ applied <data:{data}>")
 
 		#How Data Is Applied after process_mods handles it
 		match mod:

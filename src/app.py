@@ -159,10 +159,11 @@ class ItemBasedJsonEditorApp():
 		self.CORE = page
 
 		self.CORE.theme_mode = "dark"
-		self.CORE.theme = ft.Theme(color_scheme_seed="#3d2016")
+		self.CORE.theme = ft.Theme(color_scheme_seed=THEME_COLOR)
 		self.CORE.title = APP_NAME
-		width = 500
+		width = 950
 		self.CORE.window.min_width = width
+		self.CORE.window.width = width * 2
 		self.CORE.window.height = 850
 
 		self.CORE.overlay.append(self.FILEMANAGER)

@@ -76,7 +76,7 @@ class EditorInstanceTab(ft.FloatingActionButton):
 		super().__init__(
 			disabled_elevation=True,
 			shape = ft.RoundedRectangleBorder(radius = 2),
-			bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.BROWN_800),
+			bgcolor = ft.Colors.with_opacity(0.2, BGCOLOR2),
 			height = 45,
 			width = 175,
 			elevation=0,
@@ -149,15 +149,15 @@ class EditorInstanceTab(ft.FloatingActionButton):
 		self.swticher(self.instance, True)
 
 	def select(self):
-		self.bgcolor = ft.Colors.BROWN_500
+		self.bgcolor = BGCOLOR3
 		self.update()
 
 	def select_as_split_tab(self):
-		self.bgcolor = ft.Colors.BROWN_500
+		self.bgcolor = BGCOLOR3
 		self.update()
 
 	def un_select(self):
-		self.bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.BROWN_800)
+		self.bgcolor = BGCOLOR2
 		self.update()
 
 	def show(self, event = None):

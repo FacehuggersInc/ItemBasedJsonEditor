@@ -3,6 +3,26 @@ from src import *
 from src.controls.etc import *
 from src.controls.dialogs import KeyValueEffectAllDialog
 
+RR_COL_SIZE_GUIDE_KEY = {
+	"sm": 7,
+	"sm" : 7,
+	"md" : 7,
+	"lg" : 7,
+	"xl" : 7,
+	"xl" : 7,
+	"xxl" : 7
+}
+
+RR_COL_SIZE_GUIDE_VALUE = {
+	"sm": 13,
+	"sm" : 13,
+	"md" : 13,
+	"lg" : 13,
+	"xl" : 13,
+	"xl" : 13,
+	"xxl" : 13
+}
+
 class KeyValuePair(ft.Container):
 	def __init__(self, app, instance, parent, key, value):
 		self.app = app
@@ -12,23 +32,48 @@ class KeyValuePair(ft.Container):
 
 		self.__loading_preview = False
 
-		super().__init__()
-		self.key = key
+		self.key_ = key
 		self.value = value
 
 		self.type = self.__resolve_type(value)
 		self.type_history = {}
 
 		# Layout containers
-		self.topr = ft.Row(expand = True, spacing = 2, alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START)
-		self.bottomr = ft.Row(expand=True, spacing = 2, alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.END, visible=False)
-		self.column = ft.Column(expand=True, spacing = 5, controls=[self.topr, self.bottomr])
+		self.fields = ft.Row(
+			expand = True,
+			spacing = 2,
+			run_spacing=2,
+		)
+
+		self.topr = ft.Row(
+			expand = True,
+			spacing = 2,
+			alignment=ft.MainAxisAlignment.START, 
+			vertical_alignment=ft.CrossAxisAlignment.START, 
+			controls=[self.fields]
+		)
+		
+		self.bottomr = ft.Row(
+			expand = True,
+			spacing = 2, 
+			alignment=ft.MainAxisAlignment.START, 
+			vertical_alignment=ft.CrossAxisAlignment.END, 
+			visible=False
+		)
+
+		self.column = ft.Column(
+			expand = True,
+			spacing = 5, 
+			controls=[self.topr, self.bottomr]
+		)
 		self.browse_button = None
 
-		self.border_radius = 6
-		self.bgcolor = BGCOLOR2
-		self.padding = 8
-		self.content = self.column
+		super().__init__(
+			border_radius = 6,
+			bgcolor = BGCOLOR2,
+			padding = 8,
+			content = self.column
+		)
 
 		self.registry_visual_debounce = time.time()
 		self.__registry_visual_wait_thread : Thread = None
@@ -409,12 +454,12 @@ class KeyValuePair(ft.Container):
 
 	def on_string_changed_key(self, event = None):
 		self.instance.mark_as_edited()
-		self.key = self.key_field.value
+		self.key_ = self.key__field.value
 		self.update_registry()
 		if hasattr(self, "key_field"):
-			self.key_field.width = self.calc_width_via_text_len(self.key_field.value)
+			self.key__field.width = self.calc_width_via_text_len(self.key__field.value)
 			try:
-				self.key_field.update()
+				self.key__field.update()
 			except: pass
 
 	def on_string_changed_value(self, e: ft.ControlEvent = None, ctrl:ft.TextField = None):
@@ -519,7 +564,7 @@ class KeyValuePair(ft.Container):
 			children = value_unpack(self.child_container.controls)
 			for child in children:
 				# Dict children should always have string keys
-				key = child.key_field.value if hasattr(child, "key_field") else str(child.key)
+				key = child.key_field.value if hasattr(child, "key_field") else str(child.key_)
 				data[key] = child.get_value()
 			return data
 		
@@ -555,12 +600,12 @@ class KeyValuePair(ft.Container):
 			except (ValueError, AttributeError):
 				# Fallback: try to convert stored key to int
 				try:
-					key = int(self.key)
+					key = int(self.key_)
 				except:
 					key = 0
 		else:
 			# For dict items or root items, key is a string
-			key = self.key_field.value if hasattr(self, "key_field") else str(self.key)
+			key = self.key__field.value if hasattr(self, "key_field") else str(self.key_)
 		
 		return (key, self.get_value())
 
@@ -591,7 +636,7 @@ class KeyValuePair(ft.Container):
 			content = ft.Container(  #Place Holder
 				width = 75, height = 75,
 				border_radius=6,
-				bgcolor=ft.Colors.BROWN,
+				bgcolor=THEME_COLOR,
 				content = ft.Icon(ft.Icons.TIMELAPSE_ROUNDED)
 			)
 		)
@@ -609,7 +654,7 @@ class KeyValuePair(ft.Container):
 		if self.value_field.data and self.value_field.data[0] and os.path.exists(self.value_field.data[0]):
 			index = 0
 			for i, ctrl in enumerate(self.topr.controls):
-				if ctrl == self.value_field:
+				if ctrl == self.fields:
 					index = i + 1
 					break
 
@@ -677,13 +722,16 @@ class KeyValuePair(ft.Container):
 
 	def decide_view(self):
 		self.topr.controls.clear()
+		self.fields.controls.clear()
 		self.bottomr.controls.clear()
+
+		self.topr.controls.append(self.fields)
 
 		# Key (not shown for list items)
 		if not (self.pair_parent.type == list):
-			self.key_field = ft.TextField(
-				width = self.calc_width_via_text_len(str(self.key)) ,
-				value=str(self.key),
+			self.key__field = ft.TextField(
+				width = self.calc_width_via_text_len(str(self.key_)) ,
+				value=str(self.key_),
 				text_style = VALUE_TEXT_STYLE,
 				label=f"Key",
 				label_style=LABEL_TEXT_STYLE,
@@ -691,9 +739,10 @@ class KeyValuePair(ft.Container):
 				border_radius=6,
 				border_width=0,
 				bgcolor=BGCOLOR2,
+				col=RR_COL_SIZE_GUIDE_KEY,
 				on_change = self.on_string_changed_key
 			)
-			self.topr.controls.append(self.key_field)
+			self.fields.controls.append(self.key__field)
 
 		delete_btn = ft.IconButton(
 			icon=ft.Icons.CLOSE, 
@@ -734,7 +783,7 @@ class KeyValuePair(ft.Container):
 						text_align=ft.TextAlign.CENTER,
 						style = ft.TextStyle(
 							size = 15,
-							color = ft.Colors.BROWN,
+							color = ft.Colors.with_opacity(0.5, ft.Colors.WHITE),
 							weight = ft.FontWeight.BOLD
 						)
 					)
@@ -753,7 +802,7 @@ class KeyValuePair(ft.Container):
 						text_align=ft.TextAlign.CENTER,
 						style = ft.TextStyle(
 							size = 15,
-							color = ft.Colors.BROWN,
+							color = ft.Colors.with_opacity(0.5, ft.Colors.WHITE),
 							weight = ft.FontWeight.BOLD
 						)
 					)
@@ -812,11 +861,13 @@ class KeyValuePair(ft.Container):
 					border_width=0, 
 					bgcolor = BGCOLOR2,
 					tooltip = Tooltip(val),
+					col=RR_COL_SIZE_GUIDE_VALUE,
 					on_change=self.on_string_changed_value,
 					
 				)
 				self.browse_button = ft.IconButton(icon=ft.Icons.FOLDER_OPEN, tooltip=Tooltip("Open Folder"), on_click=lambda _, f=self.value_field: __open_value(f))
-				self.topr.controls += [self.value_field, self.browse_button, self.source_btn]
+				self.topr.controls += [self.browse_button, self.source_btn]
+				self.fields.controls.append(self.value_field)
 			else: #Str or Body
 				body = utility.check_full_text(val)
 				self.value_field = ft.TextField(
@@ -831,10 +882,12 @@ class KeyValuePair(ft.Container):
 					border_radius=6, 
 					border_width=0, 
 					bgcolor = BGCOLOR2,
+					col=RR_COL_SIZE_GUIDE_VALUE,
 					on_change=self.on_string_changed_value,
 					
 				)
-				self.topr.controls += [self.value_field, self.source_btn]
+				self.topr.controls += [self.source_btn]
+				self.fields.controls.append(self.value_field)
 		else:
 			type_str = self.detect_primitive(val)
 
@@ -849,10 +902,12 @@ class KeyValuePair(ft.Container):
 				border_radius=6, 
 				border_width=0,
 				bgcolor = BGCOLOR2,
+				col=RR_COL_SIZE_GUIDE_VALUE,
 				on_change=self.on_string_changed_value,
 				
 			)
-			self.topr.controls += [self.value_field, self.source_btn]
+			self.topr.controls += [self.source_btn]
+			self.fields.controls.append(self.value_field)
 
 	def change_type(self, type:any):
 		self.type_history[self.type] = self.value
@@ -1007,7 +1062,7 @@ class KeyedItem(ft.FloatingActionButton):
 		super().__init__(
 			disabled_elevation=True,
 			shape = ft.RoundedRectangleBorder(radius = 6),
-			bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.BROWN),
+			bgcolor = ft.Colors.with_opacity(0.2, THEME_COLOR),
 			width = float("inf"),
 			height = 35,
 			content = ft.GestureDetector(
