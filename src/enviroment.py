@@ -63,63 +63,51 @@ class EnvironmentPage(ft.Column):
 			]
 		)
 
+		self.app.subscribe_to_window_event(
+			ft.WindowEventType.RESIZED,
+			self.change_panel_docking
+		)
+
 		## FINAL
+		self.panels = ft.Row(
+			expand = True,
+			spacing = 5,
+			controls = [
+				self.navigator,
+				self.editor,
+				self.source
+			]
+		)
+
+		self.dock = ft.Stack(
+			expand = True,
+			controls = [
+				self.panels
+			]
+		)
+
 		super().__init__(
 			expand = True,
 			spacing = 5,
 			controls = [
 				self.__toolbar,
-				ft.Row(
-					expand = True,
-					spacing = 5,
-					controls = [
-						self.navigator,
-						self.editor,
-						self.source
-					]
-				)
+				self.dock
 			]
 		)
 
+	## OTHER
 	def open_cwd(self, event):
 		os.startfile(os.getcwd())
-
-	def save_sources(self, dialog:SourcesDialog):
-		new = {}
-		for item in dialog.sources.controls:
-			item : SourceItem = item
-
-			path = item.source_field.value
-			if not path: continue
-
-			mod = item.mod
-			opt = None
-			match mod:
-				case "path_splice":
-					opt = item.modifiers.controls[0].value
-				case _: pass
-
-			if not new.get(path):
-				new[path] = {mod:opt}
-			else:
-				new[path][mod] = opt
-
-		self.app.DATA["sources"] = new
-
-		try:
-			self.app.dialog(close = True)
-		except: pass #when app stops, this could error
-
-		#Reload Sources
-		if self.source.visible:
-			self.source.clear()
-			self.source.load()
 
 	def open_sources_dialog(self, event = None):
 		dialog = SourcesDialog(self)
 		dialog.on_dismiss = lambda _, d=dialog: self.save_sources(d)
 		self.app.dialog(dialog)
+	
+	def change_panel_docking(self, event):
+		pass
 
+	## LOAD
 	def reload_file(self, event = None):
 		if not self.loaded_paths: return
 
@@ -237,6 +225,38 @@ class EnvironmentPage(ft.Column):
 			type = ft.FilePickerFileType.CUSTOM,
 			accepted_types = ["json"]
 		)
+
+	## SAVE
+	def save_sources(self, dialog:SourcesDialog):
+		new = {}
+		for item in dialog.sources.controls:
+			item : SourceItem = item
+
+			path = item.source_field.value
+			if not path: continue
+
+			mod = item.mod
+			opt = None
+			match mod:
+				case "path_splice":
+					opt = item.modifiers.controls[0].value
+				case _: pass
+
+			if not new.get(path):
+				new[path] = {mod:opt}
+			else:
+				new[path][mod] = opt
+
+		self.app.DATA["sources"] = new
+
+		try:
+			self.app.dialog(close = True)
+		except: pass #when app stops, this could error
+
+		#Reload Sources
+		if self.source.visible:
+			self.source.clear()
+			self.source.load()
 
 	def save_json_file(self, path:str, data:dict):
 		with open(path, "w") as file:

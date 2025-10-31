@@ -78,6 +78,7 @@ class KeyValuePair(ft.Container):
 		)
 
 		self.registry_visual_debounce = time.time()
+		self.registry_visual_debounce_wait_time = 0.8
 		self.__registry_visual_wait_thread : Thread = None
 
 		self.decide_view() #self.reference created inside here
@@ -468,6 +469,7 @@ class KeyValuePair(ft.Container):
 	def on_string_changed_value(self, e: ft.ControlEvent = None, ctrl:ft.TextField = None):
 		"""Autodetect Type on Text Change"""
 		self.instance.mark_as_edited()
+		print("\nVALUE CHANGED")
 
 		control: ft.TextField = e.control if e else ctrl
 		text = control.value.strip()
@@ -478,7 +480,9 @@ class KeyValuePair(ft.Container):
 		if not is_dict and not is_list:
 			type_str = self.detect_primitive(text)
 			if type_str == "str":
-				if utility.looks_like_path(text):
+				is_path_like = utility.looks_like_path(text)
+				print(f"IS PATH?: {is_path_like} : {text}")
+				if is_path_like:
 					self.value_field.label = f"Value : PATH"
 					self.value_field.tooltip = Tooltip(text)
 					self.add_preview_image()
@@ -495,6 +499,7 @@ class KeyValuePair(ft.Container):
 				else:
 					if self.browse_button in self.topr.controls:
 						self.topr.controls.remove(self.browse_button)
+						self.topr.update()
 
 					self.remove_preview_image()
 					self.value_field.tooltip = None
@@ -510,6 +515,7 @@ class KeyValuePair(ft.Container):
 			else:
 				if self.browse_button in self.topr.controls:
 					self.topr.controls.remove(self.browse_button)
+					self.topr.update()
 
 				self.remove_preview_image()
 				self.value_field.tooltip = None
@@ -520,6 +526,7 @@ class KeyValuePair(ft.Container):
 		else:
 			if self.browse_button in self.topr.controls:
 				self.topr.controls.remove(self.browse_button)
+				self.topr.update()
 
 			#Change Type to Dict or List
 			self.type_history[self.type] = text
@@ -617,6 +624,8 @@ class KeyValuePair(ft.Container):
 	## RENDERS
 	def __set_preview_image_thread(self, image, path):
 		self.__loading_preview = True
+		print("SETTING PREVIEW THREAD")
+
 		parts = os.path.basename(path).split(".")
 		image.content = ft.Image(
 			src_base64 = utility.load_and_pre_process_image( path, max_size=(200, 200) ),
@@ -627,13 +636,14 @@ class KeyValuePair(ft.Container):
 			height = 75,
 			tooltip=Tooltip(f"{parts[0]} : {parts[-1].upper()}", wait_duration=1000)
 		)
-		try:
-			image.update()
-		except: pass
+		image.update()
+		self.topr.update()
 		self.__loading_preview = False
 
 	def set_preview_image(self, path):
-		if self.__loading_preview: return
+		if self.__loading_preview:
+			print("!!! LOADING PREVIEW ALREADY : set_preview_image")
+			return
 		image = ft.SafeArea(
 			minimum_padding = 4,
 			content = ft.Container(  #Place Holder
@@ -648,13 +658,16 @@ class KeyValuePair(ft.Container):
 			path,
 			image
 		]
+
 		self.add_preview_image()
 
 		Thread(target = self.__set_preview_image_thread, args = [image, path], name = "__set_preview_image_thread", daemon=True).start()
 
 	def add_preview_image(self):
 		#Preview Image
+		print("ADD PREVIEW IMAGE")
 		if self.value_field.data and self.value_field.data[0] and os.path.exists(self.value_field.data[0]):
+			print("ADD PREVIEW IMAGE : IN")
 			index = 0
 			for i, ctrl in enumerate(self.topr.controls):
 				if ctrl == self.fields:
@@ -663,9 +676,9 @@ class KeyValuePair(ft.Container):
 
 			self.topr.controls.insert(index, self.value_field.data[1])
 
-			try:
-				self.topr.update()
-			except: pass
+			self.topr.update()
+
+			print(f"ADD PREVIEW : HAS ADDED : {self.value_field.data[1] in self.topr.controls}")
 
 	def remove_preview_image(self):
 		if self.value_field.data and self.value_field.data[1] in self.topr.controls:
@@ -686,20 +699,30 @@ class KeyValuePair(ft.Container):
 		self.__loading_preview = False
 
 	def replace_preview_image(self, path):
-		if self.__loading_preview: return
+		if self.__loading_preview:
+			print("!!! LOADING PREVIEW ALREADY : replace_preview_image")
+			return
 		self.new_registry("paths.preview", path)
 		Thread(target = self.__replace_preview_image_thread, args = [path,], name = "__replace_preview_image_thread", daemon=True).start()
 
+	def debounce_waiting(self) -> bool:
+		if time.time() - self.registry_visual_debounce <= self.registry_visual_debounce_wait_time:
+			return True
+		
+		return False
+
 	def __apply_registry_visuals_wait_thread(self, preview_path):
 		#Wait until debounce time reaches over time
-		while time.time() - self.registry_visual_debounce <= 1:
-			time.sleep(0.3)
+		while self.debounce_waiting():
+			time.sleep(0.1)
 
-		time.sleep(0.5)
+		time.sleep(0.1)
 
 		if self.value_field.data:
+			print(f"Replacing Image : {preview_path}")
 			self.replace_preview_image(preview_path)
 		else:
+			print(f"Setting Image : {preview_path}")
 			self.set_preview_image( preview_path )
 
 		self.__registry_visual_wait_thread = None
@@ -712,10 +735,14 @@ class KeyValuePair(ft.Container):
 			expected_data = self.get_registry_value("paths.preview:expected", None)
 			if not expected_data or not expected_data == self.value_field.value.strip():
 				self.__registry_visual_wait_thread = None
+				print("No Expected Value in Field")
 				return
+			
+			print(expected_data)
 
 			self.registry_visual_debounce = time.time()
 			if self.__registry_visual_wait_thread == None:
+				print("Launching Thread")
 				self.__registry_visual_wait_thread = Thread(
 					target = self.__apply_registry_visuals_wait_thread,
 					name = "__apply_registry_visuals_wait_thread",

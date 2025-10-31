@@ -19,6 +19,9 @@ class SourcesPanel(ft.Container):
 
 		self.loaded_items = []
 
+		self.last_target : KeyValuePair = None
+		self.on_hold_source = None
+		self.waiting_on_last_target = False
 		self.target : KeyValuePair = None
 		self.target_label = ft.Text(
 			"",
@@ -201,6 +204,22 @@ class SourcesPanel(ft.Container):
 		if not self.target:
 			self._page.app.notify("Target not assigned: Click a Source button at the end of any Key-Value Pair.", 3000)
 			return
+		
+		#Check Last Target's Debounce Time on Setting Source
+		if self.last_target:
+			#Restart after half a second | Should Only Use the Initial Source Values
+			if self.last_target.debounce_waiting():
+				self.waiting_on_last_target = True
+				self.on_hold_source = [orig_path, mod, data, mod_result] #reset every time __set_target_value is called | should
+				#Values inserted as args dont matter here | only on_hold_source values do
+				ThreadTimer(1, self.__set_target_value, args = [orig_path, mod, data, mod_result]).start()
+				return
+			
+		#Time Should Be Over \ Reset & Set Values
+		if self.waiting_on_last_target:
+			orig_path, mod, data, mod_result = self.on_hold_source
+			self.on_hold_source = None
+			self.waiting_on_last_target = False
 
 		self.target.value_field.value = mod_result
 		self.target.instance.mark_as_edited()
@@ -220,6 +239,7 @@ class SourcesPanel(ft.Container):
 		
 		self.target.value_field.update()
 		self.target.on_string_changed_value(ctrl = self.target.value_field)
+		self.last_target = self.target
 
 	def process_mods(self, path:str, mod:str, data:any) -> any:
 		match mod:
