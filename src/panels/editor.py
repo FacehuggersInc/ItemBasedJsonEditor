@@ -481,6 +481,14 @@ class EditorPanel(ft.Container):
 				else:
 					instance_tab.select_as_split_tab()
 
+	def update_instances(self):
+		for instance in self.instances.controls:
+			instance.update()
+
+	def update_instance_pairs(self):
+		for instance in self.instances.controls:
+			instance.pairs.update()
+
 	def switch_instance(self, new_instance:EditorInstance = None, as_split:bool = False):
 		if new_instance in self.instances.controls: return
 

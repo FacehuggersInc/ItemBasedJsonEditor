@@ -952,7 +952,7 @@ class KeyValuePair(ft.Container):
 	def reorder(self, event:ft.WindowEvent):
 		triggered = False
 
-		#Get Position INdex
+		#Get Position Index
 		index = 0
 		for i, ctrl in enumerate(self.topr.controls):
 			index = i
@@ -967,15 +967,17 @@ class KeyValuePair(ft.Container):
 
 		#Check Size
 		width = self.app.CORE.window.width
-		if less_than(width, [1000, 1500]) and not self.compact:
+		if less_than(width, [1000, 1500]):
 			triggered = True
-			self.compact = True
-			controls = self.fields.controls
-			self.topr.controls.remove(self.fields)
-			self.topr.update()
 
 		#Reorder
-		if triggered:
+		if triggered and not self.compact:
+			self.compact = True
+
+			controls = self.fields.controls
+			self.topr.controls.remove(self.fields)
+			self.app.PAGE.editor.update_instance_pairs()
+
 			if width < 1000 and len(self.app.PAGE.editor.instances.controls) == 1:
 				self.fields = ft.Column(
 					expand = True,
@@ -993,9 +995,7 @@ class KeyValuePair(ft.Container):
 				self.type_label.visible = False
 
 			self.topr.controls.insert(index, self.fields)
-			try:
-				self.update()
-			except: pass
+			self.app.PAGE.editor.update_instance_pairs()
 
 		#Reset
 		if self.compact and not triggered:
@@ -1003,7 +1003,7 @@ class KeyValuePair(ft.Container):
 
 			controls = self.fields.controls
 			self.topr.controls.remove(self.fields)
-			self.topr.update()
+			self.app.PAGE.editor.update_instance_pairs()
 
 			self.fields = ft.Row(
 				expand = True,
@@ -1015,9 +1015,7 @@ class KeyValuePair(ft.Container):
 				self.type_label.visible = True
 
 			self.topr.controls.insert(index, self.fields)
-			try:
-				self.update()
-			except: pass
+			self.app.PAGE.editor.update_instance_pairs()
 
 	## CHILDREN
 	def render_children(self):

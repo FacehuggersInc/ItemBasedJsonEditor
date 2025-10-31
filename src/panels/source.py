@@ -198,6 +198,10 @@ class SourcesPanel(ft.Container):
 		self.items.controls.clear()
 
 	def __set_target_value(self, orig_path:str, mod:str, data:dict, mod_result:str):
+		if not self.target:
+			self._page.app.notify("Target not assigned: Click a Source button at the end of any Key-Value Pair.", 3000)
+			return
+
 		self.target.value_field.value = mod_result
 		self.target.instance.mark_as_edited()
 

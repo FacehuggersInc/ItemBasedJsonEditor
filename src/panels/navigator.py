@@ -110,6 +110,21 @@ class NavigatorPanel(ft.Container):
 		)
 
 
+	## CORE
+	def toggle(self, event = None):
+		if self.visible:
+			self.close(event)
+		else:
+			self.open(event)
+
+	def open(self, event = None):
+		self.visible = True
+		self.update()
+
+	def close(self, event = None):
+		self.visible = False
+		self.update()
+
 
 	## SEARCHING
 	def __search(self, event=None):
@@ -318,7 +333,6 @@ class NavigatorPanel(ft.Container):
 		if force_refresh:
 			for instance in self._page.editor.instances.controls:
 				instance.load()
-
 
 	def clear(self):
 		self.source = None

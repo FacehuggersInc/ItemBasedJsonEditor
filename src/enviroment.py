@@ -48,6 +48,15 @@ class EnvironmentPage(ft.Column):
 						
 					]
 				),
+				ToolbarMenuBTN(
+					"View",
+					[	
+						ToolbarItemBTN("Items Panel", ft.Icons.VIEW_AGENDA, self.navigator.toggle),
+						ToolbarItemBTN("Source Panel", ft.Icons.VIEW_AGENDA, self.source.toggle),
+						
+					],
+					ft.Icons.VIEW_QUILT_ROUNDED
+				),
 				self.recent_menu,
 				ToolbarItemBTN("Load", ft.Icons.FILE_OPEN_ROUNDED, self.load_file),
 				ToolbarItemBTN("Sources", ft.Icons.SOURCE_ROUNDED, self.open_sources_dialog),
