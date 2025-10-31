@@ -762,11 +762,6 @@ class ItemAdjustmentDialog(DialogTemplate):
 				instance.save()
 
 		for item in items:
-			#Apply Keys
-			for key in final_template.keys():
-				if not item.get(key):
-					item[key] = final_template[key]
-
 			#Remove Keys
 			item_keys = list(item.keys())
 			to_remove = [change[0] for change in self.changes if type(change) == tuple]
@@ -774,6 +769,11 @@ class ItemAdjustmentDialog(DialogTemplate):
 				if key in final_template.keys(): continue
 				elif key in to_remove:
 					del item[key]
+
+			#Apply Keys
+			for key in final_template.keys():
+				if not item.get(key):
+					item[key] = final_template[key]
 
 		self.panel.set_group_data( self.group[0], items )
 		self._page.app.dialog(close = True)

@@ -456,6 +456,7 @@ class EditorPanel(ft.Container):
 		if instance in self.instances.controls:
 			self.instances.controls.remove(instance)
 			self.instances.update()
+		del self.instance_storage[instance.source_item.data[UUID_KEY]]
 
 		gc.collect()
 
