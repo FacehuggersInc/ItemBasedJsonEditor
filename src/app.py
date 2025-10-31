@@ -178,8 +178,8 @@ class ItemBasedJsonEditorApp():
 		ft.app(target=self.build) ## BLOCKING
 
 		#Reliable Save
-		self.PAGE.editor.save()
-		self.PAGE.save_all()
+		self.PAGE.editor.save() #saves all objects
+		self.PAGE.save_all() #saves all objects within groups (this would not save any new changes within editorinstances is not saved to their group)
 
 		#Check if SourcesDialog Dialog is Open and Save Sources Anyway
 		dialog = self.get_dialog()
