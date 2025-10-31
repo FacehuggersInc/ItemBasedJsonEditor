@@ -224,9 +224,11 @@ class SourcesPanel(ft.Container):
 		self.items.controls.clear()
 
 	def refresh(self, event = None):
+		if self.loading_items: return
 		self.load_items(override=True)
 
 	def updirectory(self, event):
+		if self.loading_items: return
 		if len(self.paths) > 0:
 			self.path = self.paths.pop()
 		else:
@@ -279,6 +281,7 @@ class SourcesPanel(ft.Container):
 				return opt.data
 
 	def open_dir(self, path:str):
+		if self.loading_items: return
 		if self.path:
 			self.paths.append(self.path)
 		self.path = path
