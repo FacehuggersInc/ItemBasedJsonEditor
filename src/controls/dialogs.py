@@ -640,8 +640,9 @@ class ItemAdjustmentDialog(DialogTemplate):
 			)
 		)
 
+		group = self.panel.group_select.value.split(":")[0].strip()
 		super().__init__( 
-			f"Adjust / Add '{self.panel.group_select.value.split(":")[0].strip()}' Item",
+			f"Adjust / Add '{group}' Item",
 			container,
 			width = 650,
 			height = 700
@@ -779,6 +780,7 @@ class ItemAdjustmentDialog(DialogTemplate):
 		self.panel.load_items(force_refresh = True)
 
 	def __adjust_all_dialog(self, event = None):
+		group = self.group[3].split(":")[0].strip()
 		new_dialog = DialogTemplate(
 			"Are you Sure?",
 			height = 115,
@@ -786,7 +788,7 @@ class ItemAdjustmentDialog(DialogTemplate):
 				expand = True,
 				controls = [
 					ft.Text(
-						f"New KEYS will be added and KEYS missing from this template will be REMOVED from ALL items in '{self.group[3].split(":")[0].strip()}'",
+						f"New KEYS will be added and KEYS missing from this template will be REMOVED from ALL items in '{group}'",
 						text_align=ft.TextAlign.CENTER,
 						style=ft.TextStyle(
 							size = 19,
