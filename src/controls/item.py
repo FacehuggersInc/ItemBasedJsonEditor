@@ -3,25 +3,7 @@ from src import *
 from src.controls.etc import *
 from src.controls.dialogs import KeyValueEffectAllDialog
 
-RR_COL_SIZE_GUIDE_KEY = {
-	"sm": 7,
-	"sm" : 7,
-	"md" : 7,
-	"lg" : 7,
-	"xl" : 7,
-	"xl" : 7,
-	"xxl" : 7
-}
 
-RR_COL_SIZE_GUIDE_VALUE = {
-	"sm": 13,
-	"sm" : 13,
-	"md" : 13,
-	"lg" : 13,
-	"xl" : 13,
-	"xl" : 13,
-	"xxl" : 13
-}
 
 class KeyValuePair(ft.Container):
 	def __init__(self, app, instance, parent, key, value):
@@ -83,10 +65,7 @@ class KeyValuePair(ft.Container):
 
 		self.decide_view() #self.reference created inside here
 
-		self.app.subscribe_to_window_event(
-			ft.WindowEventType.RESIZED,
-			self.reorder
-		)
+		
 
 
 
@@ -179,7 +158,7 @@ class KeyValuePair(ft.Container):
 			del self.app.DATA["registry"][self.reference]
 
 
-	## CORE
+	## CORE - HERE
 	def remove_self_from_all(self, event = None):
 		"""Applies Only New KeyValue Pairs to All Items"""
 		group_key = self.instance.source_item.group
@@ -534,14 +513,6 @@ class KeyValuePair(ft.Container):
 
 	def get_value(self) -> int | float | bool | str | dict | list | None:
 		"""Recursively reconstructs the current Python value (dict, list, or primitive)."""
-		def value_unpack(ctrls) -> list:
-			unpacked = []
-			for child in ctrls:
-				if isinstance(child, ft.Column):
-					unpacked += child.controls
-				else:
-					unpacked.append(child)
-			return unpacked
 		
 		if self.type in (int, float, str, bool):
 			raw = self.value_field.value if hasattr(self, "value_field") else str(self.value)
@@ -561,8 +532,7 @@ class KeyValuePair(ft.Container):
 		
 		elif self.type == dict:
 			data = {}
-			children = value_unpack(self.child_container.controls)
-			for child in children:
+			for child in self.child_container.controls:
 				# Dict children should always have string keys
 				key = child.key_field.value if hasattr(child, "key_field") else str(child.key_)
 				data[key] = child.get_value()
@@ -570,7 +540,7 @@ class KeyValuePair(ft.Container):
 		
 		elif self.type == list:
 			arr = []
-			children = value_unpack(self.child_container.controls)
+			children = self.child_container.controls
 			for i, child in enumerate(children):
 				# List items are indexed by position, not by their stored key
 				arr.append(child.get_value())

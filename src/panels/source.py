@@ -17,6 +17,9 @@ class SourcesPanel(ft.Container):
 		self.sources : dict = self._page.app.DATA['sources']
 		self.registry = self._page.app.DATA['registry']
 
+		self.path = None
+		self.paths = []
+
 		self.loaded_items = []
 
 		self.last_target : KeyValuePair = None
@@ -29,6 +32,16 @@ class SourcesPanel(ft.Container):
 			text_align=ft.TextAlign.CENTER,
 			style = ft.TextStyle(
 				size = 17,
+				weight = ft.FontWeight.BOLD
+			)
+		)
+
+		self.current_dir = ft.Text(
+			"",
+			text_align=ft.TextAlign.CENTER,
+			overflow=ft.TextOverflow.FADE,
+			style = ft.TextStyle(
+				size = 18,
 				weight = ft.FontWeight.BOLD
 			)
 		)
@@ -62,6 +75,7 @@ class SourcesPanel(ft.Container):
 			label = "Search Files",
 			on_change = self.__search,
 			on_submit=self.__search,
+			width = float("inf"),
 			label_style = ft.TextStyle(
 				size = 16,
 				weight = ft.FontWeight.BOLD
@@ -87,6 +101,8 @@ class SourcesPanel(ft.Container):
 			padding = 4,
 			content = self.items
 		)
+
+		self.up_dir_btn = ft.IconButton(ft.Icons.SUBDIRECTORY_ARROW_LEFT, on_click=self.updirectory, tooltip=Tooltip("Up Directory"), disabled=True)
 		
 		super().__init__(
 			border_radius = 6,
@@ -94,63 +110,44 @@ class SourcesPanel(ft.Container):
 			height = float("inf"),
 			width = 350,
 			bgcolor = ft.Colors.SECONDARY_CONTAINER,
-			padding = 5,
+			padding = 2,
 			content = ft.Container(
 				expand = True,
 				border_radius = 6,
+				padding = 5,
 				bgcolor = BGCOLOR,
-				clip_behavior=ft.ClipBehavior.NONE,
 				content = ft.Column(
 					expand = True,
 					spacing = 5,
 					controls = [
+						self.target_label,
 						ft.Row(
 							controls = [
 								ft.IconButton(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, on_click=self.close, icon_size=15, tooltip=Tooltip("Close Sources")),
-								ft.IconButton(ft.Icons.REFRESH_ROUNDED, on_click=self.refresh, tooltip=Tooltip("Refresh Current Source")),
 								self.source_select,
 							]
 						),
 						self.search_field,
-						self.target_label,
+						ft.Row(
+							controls = [
+								self.current_dir,
+								ft.Row(
+									expand = True,
+									alignment = ft.MainAxisAlignment.END,
+									controls = [
+										self.up_dir_btn,
+										ft.IconButton(ft.Icons.REFRESH_ROUNDED, on_click=self.refresh, tooltip=Tooltip("Refresh Current Source")),
+									]
+								)
+							]
+						),
 						self.items_container
 					]
 				)
 			)
 		)
 
-	def refresh(self, event = None):
-		self.load_items(override=True)
-
-	def check_source_for_diff(self) -> bool:
-		"""Creates / Compares a Mash of hex-a-digested strings for every file name, size and source folders length; as a seed. It Checks it against the last seed to see if there are differences"""
-		path = self.get_source_selection()[3]
-		files = os.listdir(path)
-		seed = "".join( [ utility.hex_digest(f"{file}{os.path.getsize( os.path.join(path, file))}") for file in files ] ) + utility.hex_digest( str(len(files)) )
-		if seed == self.source_seed: 
-			return False
-
-		self.source_seed = seed
-		return True
-
-	def set_target_data(self):
-		if self.target:
-			item = self.target.instance.source_item.id.lower().replace(" ","_")
-
-			#If Parent is a Dictionary or List
-			if isinstance(self.target.pair_parent, KeyValuePair) and (self.target.pair_parent.type == dict or self.target.pair_parent.type == list):
-				if self.target.pair_parent.type == dict: #parent dict
-					self.target_label.value = f"Target : {item} > {self.target.pair_parent.key_field.value}.{self.target.key_field.value}"
-				else: #parent list
-					index = self.target.parent.controls.index(self.target)
-					self.target_label.value = f"Target : {item} > list.{index}"
-			else:
-				self.target_label.value = f"Target : {item} > {self.target.key_field.value}"
-			self.target_label.update()
-		else:
-			self.target_label.value = f""
-			self.target_label.update()
-
+	## CORE
 	def toggle(self, event = None, target:KeyValuePair = None):
 		if self.visible and target and not target == self.target:
 			self.target = target
@@ -179,27 +176,9 @@ class SourcesPanel(ft.Container):
 		self.clear()
 		self.update()
 
-	def set_source_data(self, key, mod, value):
-		for opt in self.group_select.options:
-			if opt.data[0] == key and opt.data[1] == mod:
-				opt.data[2] = value
-				break
 
-	def get_source_data(self, key, mod):
-		for opt in self.group_select.options:
-			if opt.data[0] == key and opt.data[1] == mod:
-				return opt.data[2]
 
-	def get_source_selection(self) -> list[str, dict, str]:
-		for opt in self.source_select.options:
-			if opt.data[4] == self.source_select.value:
-				return opt.data
-
-	def clear(self):
-		self.source_seed = ""
-		self.source_select.options.clear()
-		self.items.controls.clear()
-
+	## PROCESS
 	def __set_target_value(self, orig_path:str, mod:str, data:dict, mod_result:str):
 		if not self.target:
 			self._page.app.notify("Target not assigned: Click a Source button at the end of any Key-Value Pair.", 3000)
@@ -260,78 +239,196 @@ class SourcesPanel(ft.Container):
 				
 			case _: return path
 
-	def load_items_thread(self, event = None):
+
+
+	## LOAD
+	def clear(self):
+		self.source_seed = ""
+		self.source_select.options.clear()
 		self.items.controls.clear()
 
-		data = self.get_source_selection()
-		
-		self.file_grid = ft.GridView(
-			expand = True,
-			visible = True,
-			runs_count = 3,
-			spacing = 2
-		)
+	def refresh(self, event = None):
+		if self.loading_items: return
+		self.load_items(override=True)
 
-		file_items = [self.file_grid]
-		self.items.controls = file_items
+	def updirectory(self, event):
+		if self.loading_items: return
+		if len(self.paths) > 0:
+			self.path = self.paths.pop()
+		else:
+			self.path = self.get_source_selection[3]
+		self.load_items()
+
+	def check_source_for_diff(self) -> bool:
+		"""Creates / Compares a Mash of hex-a-digested strings for every file name, size and source folders length; as a seed. It Checks it against the last seed to see if there are differences"""
+		path = self.path
+		files = os.listdir(path)
+		seed = "".join( [ utility.hex_digest(f"{file}{os.path.getsize( os.path.join(path, file))}") for file in files ] ) + utility.hex_digest( str(len(files)) )
+		if seed == self.source_seed: 
+			return False
+
+		self.source_seed = seed
+		return True
+
+	def set_target_data(self):
+		if self.target:
+			item = self.target.instance.source_item.id.lower().replace(" ","_")
+
+			#If Parent is a Dictionary or List
+			if isinstance(self.target.pair_parent, KeyValuePair) and (self.target.pair_parent.type == dict or self.target.pair_parent.type == list):
+				if self.target.pair_parent.type == dict: #parent dict
+					self.target_label.value = f"Target : {item} > {self.target.pair_parent.key_field.value}.{self.target.key_field.value}"
+				else: #parent list
+					index = self.target.parent.controls.index(self.target)
+					self.target_label.value = f"Target : {item} > list.{index}"
+			else:
+				self.target_label.value = f"Target : {item} > {self.target.key_field.value}"
+			self.target_label.update()
+		else:
+			self.target_label.value = f""
+			self.target_label.update()
+
+	def set_source_data(self, key, mod, value):
+		for opt in self.group_select.options:
+			if opt.data[0] == key and opt.data[1] == mod:
+				opt.data[2] = value
+				break
+
+	def get_source_data(self, key, mod):
+		for opt in self.group_select.options:
+			if opt.data[0] == key and opt.data[1] == mod:
+				return opt.data[2]
+
+	def get_source_selection(self) -> list[str, dict, str]:
+		for opt in self.source_select.options:
+			if opt.data[4] == self.source_select.value:
+				return opt.data
+
+	def open_dir(self, path:str):
+		if self.loading_items: return
+		if self.path:
+			self.paths.append(self.path)
+		self.path = path
+		self.load_items()
+
+	def load_items_thread(self, event = None):
+		self.items.controls.clear()
 		self.items.update()
 
-		files = os.listdir(data[3])
-		self._page.app.LOGGER.info(f"SourcePanel is loading a fresh source ({data[3]})")
+		data = self.get_source_selection()
+
+		if not self.path:
+			self.path = data[3]
+
+		if self.paths:
+			self.up_dir_btn.disabled = False
+			self.up_dir_btn.tooltip = Tooltip(f"Up Directory '{os.path.basename( self.paths[-1] )}'")
+			self.up_dir_btn.update()
+		else:
+			self.up_dir_btn.disabled = True
+			self.up_dir_btn.tooltip = Tooltip(f"Up Directory")
+			self.up_dir_btn.update()
+
+		self.current_dir.value = f" : {os.path.basename( self.path ).upper()}"
+		self.current_dir.update()
+
+		files = os.listdir(self.path)
 		mod = data[1]
 
 		#Item Modification
 		if mod == "random":
-			random.shuffle(files)
-			files = [files[0]]
+			filter = [file for file in files if os.path.isfile( os.path.join( self.path, file ) )]
+			random.shuffle(filter)
+			files = [filter[0]]
 
 		#Create Item Controls
 		for file in files:
 			parts = file.split(".")
 			ext = parts[-1]
-			path = os.path.join( data[3], file )
+			path = os.path.join( self.path, file )
+			is_file = os.path.isfile(path)
+
+			set_field_func = lambda _, p=path, m=data[1], d=data[2]: self.__set_target_value(p, m, d, self.process_mods(p, m, d) )
+			
+			file_func = set_field_func if is_file else lambda _, p=path: self.open_dir(p)
+			if mod == "random":
+				file_func = set_field_func
+
+			new_item = ft.FloatingActionButton(
+				bgcolor=ft.Colors.TRANSPARENT,
+				disabled_elevation=True,
+				elevation=0,
+				width = float("inf"),
+				height = 45,
+				content = ft.Row(),
+				data = [file, path],
+				on_click = file_func
+			)
+
 			if ext in utility.SUPPORTED_IMAGE_EXTS:
-				self.file_grid.controls.append(
-					ft.FloatingActionButton(
-						bgcolor=ft.Colors.TRANSPARENT,
-						disabled_elevation=True,
-						elevation=0,
-						content = ft.Image(
+				new_item.content = ft.Row(
+					expand = True,
+					spacing = 10,
+					controls = [
+						ft.Image(
 							src_base64 = utility.load_and_pre_process_image( path, max_size=(200, 200)),
-							fit = ft.ImageFit.SCALE_DOWN,
+							fit = ft.ImageFit.FIT_HEIGHT,
 							anti_alias = True,
 							filter_quality = ft.FilterQuality.HIGH
 						),
-						tooltip=Tooltip(f"{parts[0]} : {ext.upper()}", wait_duration=1000),
-						data = [file, path], 
-						on_click = lambda _, p=path, m=data[1], d=data[2]: self.__set_target_value(p, m, d, self.process_mods(p, m, d) )
-					)
+						ft.Text(
+							file,
+							style = ft.TextStyle(
+								size = 17,
+								weight = ft.FontWeight.NORMAL
+							)
+						)
+					]
 				)
 			else:
-				self.file_grid.controls.append(
-					ft.FloatingActionButton(
-						bgcolor=ft.Colors.TRANSPARENT,
-						disabled_elevation=True,
-						elevation=0,
-						content = ft.Icon(FILE_ICONS.get(f".{ext}", ft.Icons.FILE_PRESENT_ROUNDED), size=50,),
-						tooltip=Tooltip(f"{parts[0]} : {ext}", wait_duration=1000),
-						data = [file, path],
-						on_click= lambda _, p=path, m=data[1], d=data[2]: self.__set_target_value( self.process_mods(p, m, d) )
-					)
+				new_item.content = ft.Row(
+					expand = True,
+					spacing = 10,
+					controls = [
+						ft.Icon(FILE_ICONS.get(f".{ext}", ft.Icons.FILE_PRESENT_ROUNDED if is_file else ft.Icons.FOLDER_ROUNDED), size=45),
+						ft.Text(
+							file,
+							style = ft.TextStyle(
+								size = 17,
+								weight = ft.FontWeight.NORMAL
+							)
+						)
+					]
 				)
 
-			self.file_grid.update()
+			self.items.controls.append(new_item)
+			self.items.update()
 
 		if mod == "random":
-			self.file_grid.controls.append(
+			self.items.controls.append(
 				ft.FloatingActionButton(
 					bgcolor=ft.Colors.TRANSPARENT,
 					disabled_elevation=True,
 					elevation=0,
-					content = ft.Icon(ft.Icons.AUTORENEW_ROUNDED, size=50),
+					width = float("inf"),
+					height = 45,
+					content = ft.Row(
+						expand = True,
+						spacing = 10,
+						controls = [
+							ft.Icon(ft.Icons.AUTORENEW_ROUNDED, size=45),
+							ft.Text(
+								"Get New Random File",
+								style = ft.TextStyle(
+									size = 17,
+									weight = ft.FontWeight.NORMAL
+								)
+							)
+						]
+					),
+					data = "RANDOMBTN",
 					tooltip=Tooltip(f"Randomize Again..."),
-					data = "RANDOMIZER",
-					on_click= lambda _, o=True: self.load_items(override=o)
+					on_click = lambda _, o=True: self.load_items(override=o)
 				)
 			)
 
@@ -339,9 +436,8 @@ class SourcesPanel(ft.Container):
 
 		gc.collect()
 
-		self.loaded_items = self.file_grid.controls
-
-		self.last_item_count = len(self.file_grid.controls)
+		self.loaded_items = self.items.controls
+		self.last_item_count = len(self.items.controls)
 		self.loading_items = False
 		self.loading_thread = None
 		self.source_select.disabled = False
@@ -350,17 +446,11 @@ class SourcesPanel(ft.Container):
 		self.search_field.update()
 
 	def search_load_items(self, items):
-		self.file_grid.controls = items
-		self.file_grid.update()
+		self.items.controls = items
+		self.items.update()
 
 	def load_items(self, event = None, override:bool = False):
 		if self.loading_items: return
-
-		source = self.get_source_selection()
-		if source[1] == "random" or not self.last_source_mod == source[1]: override = True
-		if not self.check_source_for_diff() and not override: return
-
-		self.last_source_mod = source[1]
 
 		self.loading_items = True
 		self.source_select.disabled = True
@@ -371,6 +461,7 @@ class SourcesPanel(ft.Container):
 		self.loading_thread.start()
 
 	def load(self, event = None):
+		"""Sources in Dropdown | Not Items"""
 		self.sources = self._page.app.DATA["sources"]
 
 		if not len(self.sources) > 0:
@@ -407,6 +498,8 @@ class SourcesPanel(ft.Container):
 
 		if len(self.items.controls) <= 0: self.load_items()
 
+
+
 	## SEARCHING
 	def get_items(self):
 		return self.loaded_items
@@ -424,7 +517,7 @@ class SourcesPanel(ft.Container):
 			return
 		
 		items = self.loaded_items
-		names = [item.data[0].split(".")[0] for item in items]
+		names = [item.data[0] for item in items]
 		queried = []
 
 		# *query* - Match items that have query somewhere inside of text
@@ -432,7 +525,7 @@ class SourcesPanel(ft.Container):
 			term = query.strip("*")
 			queried = [
 				item for item in items
-				if term.lower() in item.data[0].split(".")[0]
+				if term.lower() in item.data[0]
 			]
 
 		# * prefix - Match items that END with the text (case-insensitive)
@@ -440,14 +533,14 @@ class SourcesPanel(ft.Container):
 			suffix = query[1:].lower()
 			queried = [
 				item for item in items
-				if item.data[0].split(".")[0].lower().endswith(suffix)
+				if item.data[0].lower().endswith(suffix)
 			]
 		# * suffix - Match items that START with the text (case-insensitive)
 		elif query.endswith("*") and len(query) > 1:
 			prefix = query[:-1].lower()
 			queried = [
 				item for item in items
-				if item.data[0].split(".")[0].lower().startswith(prefix)
+				if item.data[0].lower().startswith(prefix)
 			]
 
 		#Fuzzy Search Fallback
@@ -461,7 +554,7 @@ class SourcesPanel(ft.Container):
 
 			for item in items:
 				for name, score, _ in results:
-					if item.data[0].split(".")[0] == name and score >= minCatch * 100:  # 0–100 scale
+					if item.data[0] == name and score >= minCatch * 100:  # 0–100 scale
 						queried.append(item)
 						break
 

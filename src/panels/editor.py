@@ -6,9 +6,11 @@ from src.controls.toolbar import *
 from src.controls.dialogs import *
 
 class EditorInstanceTab(ft.FloatingActionButton):
-	def __init__(self, key:str, switch_instance):
+	def __init__(self, panel, uuid_key, key:str, switch_instance):
 		self.__name = utility.readable_key(key)
 		self.on_remove_func = None
+		self.panel = panel
+		self.instance_key = uuid_key
 		self.instance : EditorInstance = None
 		self.swticher = switch_instance
 
@@ -120,11 +122,14 @@ class EditorInstanceTab(ft.FloatingActionButton):
 			on_click = self.switch
 		)
 
+	def get_instance(self):
+		return self.panel.instance_storage[self.instance_key]
+
 	def update_name(self, name):
 		self.name.value = name
 		self.tooltip = Tooltip(name)
-		self.split_btn.tooltip = Tooltip(name)
-		self.close_btn.tooltip = Tooltip(name)
+		self.split_btn.tooltip = Tooltip(f"Split '{name}'")
+		self.close_btn.tooltip = Tooltip(f"Close '{name}'")
 		self.update()
 
 	def mark_as_saved(self):
@@ -134,7 +139,6 @@ class EditorInstanceTab(ft.FloatingActionButton):
 			self.__save_marker.update()
 		except: pass
 
-
 	def mark_as_edited(self):
 		self.__save_marker.visible = True
 		self.__save_marker.data = True
@@ -143,10 +147,10 @@ class EditorInstanceTab(ft.FloatingActionButton):
 		except: pass
 
 	def switch(self, event):
-		self.swticher(self.instance)
+		self.swticher(self.get_instance())
 
 	def split(self, event):
-		self.swticher(self.instance, True)
+		self.swticher(self.get_instance(), True)
 
 	def select(self):
 		self.bgcolor = BGCOLOR3
@@ -180,7 +184,7 @@ class EditorInstanceTab(ft.FloatingActionButton):
 		self.parent.controls.remove(self)
 		self.parent.update()
 		if self.on_remove_func:
-			self.on_remove_func(self.instance)
+			self.on_remove_func(self.get_instance())
 
 class EditorInstance(ft.Container):
 	def __init__(self, panel, page, source_item, instance_tab):
@@ -278,6 +282,9 @@ class EditorInstance(ft.Container):
 				template[key] = value
 				ctrl.update_registry()
 
+			if event:
+				print(f"{event}|{template}")
+
 			#Find Item & Replace with New Template
 			group_items : list = self._page.navigator.get_group_data(self.source_item.group)
 			to_change = None
@@ -314,6 +321,7 @@ class EditorInstance(ft.Container):
 			#Save to Group
 			self._page.navigator.set_group_data(self.source_item.group, group_items)
 
+			#Logging
 			if not self.was_saved:
 				self.was_saved = True
 				self.instance_tab.mark_as_saved()
@@ -339,6 +347,8 @@ class EditorInstance(ft.Container):
 class EditorPanel(ft.Container):
 	def __init__(self, page:any):
 		self._page = page
+
+		self.instance_storage = {}
 
 		self.instance_tabs = ft.Row(
 			expand = True,
@@ -403,8 +413,8 @@ class EditorPanel(ft.Container):
 
 	def save(self, event = None):
 		self._page.app.LOGGER.info(f"Editor is attempting to save all instances ...")
-		for instance_tab in self.instance_tabs.controls:
-			instance_tab.instance.save()
+		for instance in self.instance_storage.values():
+			instance.save()
 
 	def add_new_item(self, event = None):
 		group = self._page.navigator.get_group_selection()
@@ -475,7 +485,7 @@ class EditorPanel(ft.Container):
 
 		for instance_tab in self.instance_tabs.controls:
 			instance_tab.un_select()
-			if instance_tab.instance in self.instances.controls:
+			if instance_tab.get_instance() in self.instances.controls:
 				if len(self.instances.controls) < 2:
 					instance_tab.select()
 				else:
@@ -493,7 +503,6 @@ class EditorPanel(ft.Container):
 		if new_instance in self.instances.controls: return
 
 		for instance in self.instances.controls:
-			instance.instance_tab.instance = instance
 			instance.save()
 
 		if not as_split:
@@ -513,7 +522,7 @@ class EditorPanel(ft.Container):
 
 		for instance_tab in self.instance_tabs.controls:
 			instance_tab.un_select()
-			if instance_tab.instance in self.instances.controls:
+			if instance_tab.get_instance() in self.instances.controls:
 				if len(self.instances.controls) < 2:
 					instance_tab.select()
 				else:
@@ -528,18 +537,19 @@ class EditorPanel(ft.Container):
 
 		#If Opened Already
 		for instance_tab in self.instance_tabs.controls:
-			if instance_tab.instance.source_item.name.value == item.name.value:
-				self.switch_instance(instance_tab.instance, as_split)
+			if instance_tab.get_instance().source_item.name.value == item.name.value:
+				self.switch_instance(instance_tab.get_instance(), as_split)
 				return
 		
 		#Create Instance Tab
-		tab = EditorInstanceTab(item.name.value, self.switch_instance)
+		tab = EditorInstanceTab(self, item.data[UUID_KEY], item.name.value, self.switch_instance)
 
 		#Create Instance
 		instance = EditorInstance(self, self._page, item, tab)
 
-		tab.instance = instance
 		tab.on_remove_func = self.remove_instance
+
+		self.instance_storage[item.data[UUID_KEY]] = instance
 
 		self.instance_tabs.controls.append(tab)
 		self.instance_tabs.update()

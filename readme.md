@@ -1,4 +1,4 @@
-project writen in python 3.12.4
+project written in python 3.12.4
 
 This project was meant to handle and easily modify JSON for a lot of game-related items, making it easy to create new items and adjust JSON.
 
@@ -35,6 +35,7 @@ These files can include multiple root-level keys (like weapons) with easy switch
 * Includes Image Previews and a Remembrance of what preview (source file) was there even when using Path Splicing.
 
 This project is open to suggestions and, of course, to report issues.
+
 
 
 

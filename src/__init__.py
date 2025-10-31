@@ -16,7 +16,7 @@ class ExplorerTypes(Enum):
     FILES = 0
     FOLDER = 1
 
-VERSION = "1.0.27:04"
+VERSION = "1.0.35"
 
 APP_NAME = "Item Builder / Json Editor"
 
@@ -29,12 +29,12 @@ BGCOLOR3 = ft.Colors.with_opacity(0.5, ft.Colors.BLACK)
 THEME_COLOR = "#3d2016"
 
 VALUE_TEXT_STYLE = ft.TextStyle(
-	size = 18,
+	size = 17,
 	weight = ft.FontWeight.W_500
 )
 
 LABEL_TEXT_STYLE = ft.TextStyle(
-	size = 16.5,
+	size = 15,
 	weight =ft.FontWeight.BOLD
 )
 
