@@ -190,12 +190,7 @@ class KeyValuePair(ft.Container):
 			try:
 				pdash.unset(item, pydash_path)
 			except Exception as e:
-				file = datetime.now().strftime("%d%m%Y_%H%M.log")
-				if not os.path.exists(file):
-					with open(file, "w") as file:
-						file.write(f"LOGS {file.split(".")[0]}")
-				with open(file, "a") as file:
-					file.write(f"\n[{datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}] Delete from all failed to occur on instance because {e}\n  : {pair}\n : \n  :  {pydash_path}\n  :  {path_parts}\n  :  {item}")
+				self.app.LOGGER.error(f"Remove from all failed to occur on instance because {e}\n  :  {pair}\n  :  {pydash_path}\n  :  {path_parts}\n  :  {item}", True)
 
 		self.app.PAGE.navigator.set_group_data( group_key, items )
 		self.app.PAGE.navigator.load_items(force_refresh=True)
@@ -261,12 +256,7 @@ class KeyValuePair(ft.Container):
 			try:
 				pdash.set_(item, pydash_path, pair[1])
 			except Exception as e:
-				file = datetime.now().strftime("%d%m%Y_%H%M.log")
-				if not os.path.exists(file):
-					with open(file, "w") as file:
-						file.write(f"LOGS {file.split(".")[0]}")
-				with open(file, "a") as file:
-					file.write(f"\n[{datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}] Apply to all failed to occur on instance because {e}\n  :  {pair}\n  :  {pydash_path}\n  :  {path_parts}\n  :  {item}")
+				self.app.LOGGER.error(f"Apply to all failed to occur on instance because {e}\n  :  {pair}\n  :  {pydash_path}\n  :  {path_parts}\n  :  {item}", True)
 
 		self.app.PAGE.navigator.set_group_data( group_key, items )
 		self.app.PAGE.navigator.load_items(force_refresh=True)
