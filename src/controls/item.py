@@ -39,10 +39,10 @@ class KeyValuePair(ft.Container):
 		self.type_history = {}
 
 		# Layout containers
+		self.compact = False
 		self.fields = ft.Row(
 			expand = True,
-			spacing = 2,
-			run_spacing=2,
+			spacing = 2
 		)
 
 		self.topr = ft.Row(
@@ -66,7 +66,9 @@ class KeyValuePair(ft.Container):
 			spacing = 5, 
 			controls=[self.topr, self.bottomr]
 		)
+
 		self.browse_button = None
+		self.type_label = None
 
 		super().__init__(
 			border_radius = 6,
@@ -80,7 +82,10 @@ class KeyValuePair(ft.Container):
 
 		self.decide_view() #self.reference created inside here
 
-		
+		self.app.subscribe_to_window_event(
+			ft.WindowEventType.RESIZED,
+			self.reorder
+		)
 
 
 
@@ -454,13 +459,11 @@ class KeyValuePair(ft.Container):
 
 	def on_string_changed_key(self, event = None):
 		self.instance.mark_as_edited()
-		self.key_ = self.key__field.value
+		self.key_ = self.key_field.value
 		self.update_registry()
 		if hasattr(self, "key_field"):
-			self.key__field.width = self.calc_width_via_text_len(self.key__field.value)
-			try:
-				self.key__field.update()
-			except: pass
+			self.key_field.width = self.calc_width_via_text_len(self.key_field.value)
+			self.key_field.update()
 
 	def on_string_changed_value(self, e: ft.ControlEvent = None, ctrl:ft.TextField = None):
 		"""Autodetect Type on Text Change"""
@@ -605,7 +608,7 @@ class KeyValuePair(ft.Container):
 					key = 0
 		else:
 			# For dict items or root items, key is a string
-			key = self.key__field.value if hasattr(self, "key_field") else str(self.key_)
+			key = self.key_field.value if hasattr(self, "key_field") else str(self.key_)
 		
 		return (key, self.get_value())
 
@@ -729,7 +732,7 @@ class KeyValuePair(ft.Container):
 
 		# Key (not shown for list items)
 		if not (self.pair_parent.type == list):
-			self.key__field = ft.TextField(
+			self.key_field = ft.TextField(
 				width = self.calc_width_via_text_len(str(self.key_)) ,
 				value=str(self.key_),
 				text_style = VALUE_TEXT_STYLE,
@@ -739,10 +742,10 @@ class KeyValuePair(ft.Container):
 				border_radius=6,
 				border_width=0,
 				bgcolor=BGCOLOR2,
-				col=RR_COL_SIZE_GUIDE_KEY,
+				data = "KEY",
 				on_change = self.on_string_changed_key
 			)
-			self.fields.controls.append(self.key__field)
+			self.fields.controls.append(self.key_field)
 
 		delete_btn = ft.IconButton(
 			icon=ft.Icons.CLOSE, 
@@ -771,15 +774,16 @@ class KeyValuePair(ft.Container):
 			)
 		)
 
-		if self.type == dict:
-			type_label = ft.Column(
+		if self.type in (dict, list):
+			self.type_label = ft.Column(
 				height = 35,
 				width = 105,
+				visible=True,
 				alignment=ft.MainAxisAlignment.CENTER,
 				horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 				controls = [
 					ft.Text(
-						value = "DICTIONARY",
+						value = "DICTIONARY" if self.type == dict else "LIST",
 						text_align=ft.TextAlign.CENTER,
 						style = ft.TextStyle(
 							size = 15,
@@ -789,26 +793,7 @@ class KeyValuePair(ft.Container):
 					)
 				]
 			)
-			self.topr.controls.insert(2, type_label)
-		elif self.type == list:
-			type_label = ft.Column(
-				height = 35,
-				width = 70,
-				alignment=ft.MainAxisAlignment.CENTER,
-				horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-				controls = [
-					ft.Text(
-						value = "LIST",
-						text_align=ft.TextAlign.CENTER,
-						style = ft.TextStyle(
-							size = 15,
-							color = ft.Colors.with_opacity(0.5, ft.Colors.WHITE),
-							weight = ft.FontWeight.BOLD
-						)
-					)
-				]
-			)
-			self.topr.controls.insert(2, type_label)
+			self.topr.controls.insert(2, self.type_label)
 
 		# --- Render field based on type ---
 		if self.type in (int, float, bool, str, None):
@@ -861,7 +846,6 @@ class KeyValuePair(ft.Container):
 					border_width=0, 
 					bgcolor = BGCOLOR2,
 					tooltip = Tooltip(val),
-					col=RR_COL_SIZE_GUIDE_VALUE,
 					on_change=self.on_string_changed_value,
 					
 				)
@@ -882,7 +866,6 @@ class KeyValuePair(ft.Container):
 					border_radius=6, 
 					border_width=0, 
 					bgcolor = BGCOLOR2,
-					col=RR_COL_SIZE_GUIDE_VALUE,
 					on_change=self.on_string_changed_value,
 					
 				)
@@ -902,7 +885,6 @@ class KeyValuePair(ft.Container):
 				border_radius=6, 
 				border_width=0,
 				bgcolor = BGCOLOR2,
-				col=RR_COL_SIZE_GUIDE_VALUE,
 				on_change=self.on_string_changed_value,
 				
 			)
@@ -967,7 +949,75 @@ class KeyValuePair(ft.Container):
 		self.bottomr.visible = True
 		self.bottomr.controls += [self.child_container]
 
+	def reorder(self, event:ft.WindowEvent):
+		triggered = False
 
+		#Get Position INdex
+		index = 0
+		for i, ctrl in enumerate(self.topr.controls):
+			index = i
+			if ctrl == self.fields:
+				break
+			
+		def less_than(value:int, values:list):
+			for val in values:
+				if value < val:
+					return True
+			return False
+
+		#Check Size
+		width = self.app.CORE.window.width
+		if less_than(width, [1000, 1500]) and not self.compact:
+			triggered = True
+			self.compact = True
+			controls = self.fields.controls
+			self.topr.controls.remove(self.fields)
+			self.topr.update()
+
+		#Reorder
+		if triggered:
+			if width < 1000 and len(self.app.PAGE.editor.instances.controls) == 1:
+				self.fields = ft.Column(
+					expand = True,
+					spacing = 8,
+					controls=controls
+				)
+			elif width < 1500 and len(self.app.PAGE.editor.instances.controls) > 1:
+				self.fields = ft.Column(
+					expand = True,
+					spacing = 8,
+					controls=controls
+				)
+
+			if self.type_label and self.type_label.visible:
+				self.type_label.visible = False
+
+			self.topr.controls.insert(index, self.fields)
+			try:
+				self.update()
+			except: pass
+
+		#Reset
+		if self.compact and not triggered:
+			self.compact = False
+
+			controls = self.fields.controls
+			self.topr.controls.remove(self.fields)
+			self.topr.update()
+
+			self.fields = ft.Row(
+				expand = True,
+				spacing = 2,
+				controls=controls
+			)
+
+			if self.type_label and not self.type_label.visible:
+				self.type_label.visible = True
+
+			self.topr.controls.insert(index, self.fields)
+			try:
+				self.update()
+			except: pass
 
 	## CHILDREN
 	def render_children(self):
@@ -991,6 +1041,8 @@ class KeyValuePair(ft.Container):
 		self.render_children()
 		self.update()
 		self.instance.mark_as_edited()
+
+
 
 class KeyedItem(ft.FloatingActionButton):
 	def __init__(self, group_key:str, key:str, data:dict, on_click:Callable, on_copy:Callable, on_remove:Callable):

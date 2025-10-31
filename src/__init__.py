@@ -1,6 +1,6 @@
 import flet as ft
 from pathlib import Path
-from threading import Thread
+from threading import Thread, Timer as ThreadTimer
 from datetime import datetime
 import os, json, re, uuid, copy, string, random, io, base64, hashlib, gc, time, traceback, sys
 from rapidfuzz import process, fuzz
@@ -16,7 +16,7 @@ class ExplorerTypes(Enum):
     FILES = 0
     FOLDER = 1
 
-VERSION = "1.0.25:01"
+VERSION = "1.0.25:02"
 
 APP_NAME = "Item Builder / Json Editor"
 
