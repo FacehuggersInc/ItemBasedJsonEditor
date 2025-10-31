@@ -490,7 +490,7 @@ class SourcesPanel(ft.Container):
 			return
 		
 		items = self.loaded_items
-		names = [item.data[0].split(".")[0] for item in items]
+		names = [item.data[0] for item in items]
 		queried = []
 
 		# *query* - Match items that have query somewhere inside of text
@@ -498,7 +498,7 @@ class SourcesPanel(ft.Container):
 			term = query.strip("*")
 			queried = [
 				item for item in items
-				if term.lower() in item.data[0].split(".")[0]
+				if term.lower() in item.data[0]
 			]
 
 		# * prefix - Match items that END with the text (case-insensitive)
@@ -506,14 +506,14 @@ class SourcesPanel(ft.Container):
 			suffix = query[1:].lower()
 			queried = [
 				item for item in items
-				if item.data[0].split(".")[0].lower().endswith(suffix)
+				if item.data[0].lower().endswith(suffix)
 			]
 		# * suffix - Match items that START with the text (case-insensitive)
 		elif query.endswith("*") and len(query) > 1:
 			prefix = query[:-1].lower()
 			queried = [
 				item for item in items
-				if item.data[0].split(".")[0].lower().startswith(prefix)
+				if item.data[0].lower().startswith(prefix)
 			]
 
 		#Fuzzy Search Fallback
@@ -527,7 +527,7 @@ class SourcesPanel(ft.Container):
 
 			for item in items:
 				for name, score, _ in results:
-					if item.data[0].split(".")[0] == name and score >= minCatch * 100:  # 0–100 scale
+					if item.data[0] == name and score >= minCatch * 100:  # 0–100 scale
 						queried.append(item)
 						break
 
