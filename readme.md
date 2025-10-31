@@ -1,3 +1,5 @@
+project writen in python 3.12.4
+
 This project was meant to handle and easily modify JSON for a lot of game-related items, making it easy to create new items and adjust JSON.
 
 JSON files can only be accepted by this application if they follow this data structure in JSON: root (dict) > key : list [dict, dict, dict, ...]. This is currently a strict requirement; it will not load if any key in the root does not have a list value, and if any item within that list is not another dict.
@@ -33,6 +35,7 @@ These files can include multiple root-level keys (like weapons) with easy switch
 * Includes Image Previews and a Remembrance of what preview (source file) was there even when using Path Splicing.
 
 This project is open to suggestions and, of course, to report issues.
+
 
 
 
