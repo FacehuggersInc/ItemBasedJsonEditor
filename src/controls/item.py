@@ -153,7 +153,6 @@ class KeyValuePair(ft.Container):
 			for key in references:
 				id = key.rsplit("@", 1)
 				if id[0] in self.reference and not key == self.reference:
-					print(f"Cleaned Up Ref: {id[0]} : {id[1]}")
 					del self.app.DATA["registry"][key]
 			del self.app.DATA["registry"][self.reference]
 
@@ -313,7 +312,6 @@ class KeyValuePair(ft.Container):
 		for key in references:
 			id = key.rsplit("@", 1)
 			if id[0] in self.reference and not key == self.reference:
-				print(f"Cleaned Up Ref: {id[0]} : {id[1]}")
 				del self.app.DATA["registry"][key]
 
 		# Reassign the registry entry

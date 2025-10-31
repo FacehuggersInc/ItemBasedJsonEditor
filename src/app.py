@@ -180,6 +180,8 @@ class ItemBasedJsonEditorApp():
 		self.CORE.window.width = width * 2
 		self.CORE.window.height = 850
 
+		self.CORE.padding = 5
+
 		self.CORE.window.on_event = self.__on_window_event
 
 		self.CORE.overlay.append(self.FILEMANAGER)
