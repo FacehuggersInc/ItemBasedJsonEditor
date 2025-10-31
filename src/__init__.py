@@ -28,12 +28,12 @@ BGCOLOR3 = ft.Colors.with_opacity(0.8, ft.Colors.BROWN)
 BGCOLOR4 = ft.Colors.with_opacity(0.1, ft.Colors.BROWN_100)
 
 VALUE_TEXT_STYLE = ft.TextStyle(
-	size = 18,
+	size = 17,
 	weight = ft.FontWeight.W_500
 )
 
 LABEL_TEXT_STYLE = ft.TextStyle(
-	size = 16.5,
+	size = 15,
 	weight =ft.FontWeight.BOLD
 )
 
