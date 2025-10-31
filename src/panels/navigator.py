@@ -79,7 +79,7 @@ class NavigatorPanel(ft.Container):
 			height = float("inf"),
 			width = 350,
 			bgcolor = ft.Colors.SECONDARY_CONTAINER,
-			padding = 5,
+			padding = 2,
 			content = ft.Container(
 				expand = True,
 				border_radius = 6,

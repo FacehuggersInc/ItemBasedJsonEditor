@@ -3,6 +3,8 @@ from src import *
 from src.controls.etc import *
 from src.controls.dialogs import KeyValueEffectAllDialog
 
+
+
 class KeyValuePair(ft.Container):
 	def __init__(self, app, instance, parent, key, value):
 		self.app = app
@@ -34,10 +36,6 @@ class KeyValuePair(ft.Container):
 		self.__registry_visual_wait_thread : Thread = None
 
 		self.decide_view() #self.reference created inside here
-
-		
-
-
 
 	## HELPERS
 	def __resolve_type(self, value):
