@@ -16,7 +16,7 @@ class ExplorerTypes(Enum):
     FILES = 0
     FOLDER = 1
 
-VERSION = "1.1.1"
+VERSION = "1.1.5"
 
 APP_NAME = "Item Builder / Json Editor"
 

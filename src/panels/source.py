@@ -21,6 +21,7 @@ class SourcesPanel(ft.Container):
 		self.paths = []
 
 		self.loaded_items = []
+		self.searchable_items = []
 
 		self.last_target : KeyValuePair = None
 		self.on_hold_source = None
@@ -41,8 +42,29 @@ class SourcesPanel(ft.Container):
 			text_align=ft.TextAlign.CENTER,
 			overflow=ft.TextOverflow.FADE,
 			style = ft.TextStyle(
-				size = 18,
+				size = 15,
 				weight = ft.FontWeight.BOLD
+			)
+		)
+
+		self.type_select = ft.PopupMenuButton(
+			icon=ft.Icons.ARROW_DROP_DOWN_CIRCLE_OUTLINED,
+			icon_color="white",
+			tooltip=Tooltip("Select a Filter Type"),
+			items=[],
+			data = "any",
+			content=ft.Container(
+				content=ft.Text(
+					"Filter : any",
+					size=14,
+					weight=ft.FontWeight.BOLD,
+					color=ft.Colors.WHITE
+				),
+				padding=10,
+				bgcolor=BGCOLOR,
+				width=105,
+				border=ft.border.all(1.5, ft.Colors.with_opacity(0.4, "black")),
+				border_radius=ft.border_radius.all(6),
 			)
 		)
 
@@ -144,6 +166,7 @@ class SourcesPanel(ft.Container):
 									controls = [
 										self.up_dir_btn,
 										ft.IconButton(ft.Icons.REFRESH_ROUNDED, on_click=self.refresh, tooltip=Tooltip("Refresh Current Source")),
+										self.type_select
 									]
 								)
 							]
@@ -183,6 +206,21 @@ class SourcesPanel(ft.Container):
 		self.clear()
 		self.update()
 
+	def un_lock_controls(self):
+		self.type_select.disabled = False
+		self.type_select.update()
+		self.source_select.disabled = False
+		self.source_select.update()
+		self.search_field.disabled = False
+		self.search_field.update()
+
+	def lock_controls(self):
+		self.type_select.disabled = True
+		self.type_select.update()
+		self.source_select.disabled = True
+		self.source_select.update()
+		self.search_field.disabled = True
+		self.search_field.update()
 
 
 	## PROCESS
@@ -319,6 +357,27 @@ class SourcesPanel(ft.Container):
 		self.path = path
 		self.load_items()
 
+	def filter_items(self, ext = None):
+		if not ext: ext = self.type_select.data
+
+		if not ext: return
+
+		match ext:
+			case "any":
+				self.searchable_items = self.loaded_items
+				self.set_items(self.loaded_items)
+			case _:
+				self.searchable_items = [
+					item for item in self.loaded_items if ext in item.data[0] or not os.path.isfile(item.data[1])
+				]
+				self.set_items(self.searchable_items)
+		
+		self.type_select.data = ext
+		print(f"Changing Filter to {ext}")
+		self.type_select.content.content.value = f"Filter : {ext}"
+		self.type_select.update()
+
+
 	def load_items_thread(self, event = None):
 		self.items.controls.clear()
 		self.items.update()
@@ -442,18 +501,50 @@ class SourcesPanel(ft.Container):
 
 		self.items.update()
 
+		#Update Filters
+		self.type_select.items.clear()
+		for file in files:
+			if len(file.split(".")) >= 2 and not file.split(".")[-1] in [item.data for item in self.type_select.items]:
+				self.type_select.items.append(
+					ft.PopupMenuItem(
+						content = ft.Text(
+							os.path.basename(file).split(".")[-1],
+							size=14,
+							weight=ft.FontWeight.BOLD,
+							color=ft.Colors.WHITE
+						),
+						data = os.path.basename(file).split(".")[-1],
+						on_click = lambda _, ext=os.path.basename(file).split(".")[-1]: self.filter_items(ext)
+					) 
+				)
+
+		self.type_select.items.insert(
+			0,
+			ft.PopupMenuItem(
+				content = ft.Text(
+					"any",
+					size=14,
+					weight=ft.FontWeight.BOLD,
+					color=ft.Colors.WHITE
+				),
+				data = "any",
+				on_click = lambda _, ext="any": self.filter_items(ext)
+			)
+		)
+		self.type_select.update()
+
 		gc.collect()
 
 		self.loaded_items = self.items.controls
-		self.last_item_count = len(self.items.controls)
+		self.searchable_items = self.loaded_items
 		self.loading_items = False
 		self.loading_thread = None
-		self.source_select.disabled = False
-		self.source_select.update()
-		self.search_field.disabled = False
-		self.search_field.update()
+		self.un_lock_controls()
 
-	def search_load_items(self, items):
+		if not mod == "random":
+			self.filter_items(self.type_select.data)
+
+	def set_items(self, items):
 		self.items.controls = items
 		self.items.update()
 
@@ -461,10 +552,7 @@ class SourcesPanel(ft.Container):
 		if self.loading_items: return
 
 		self.loading_items = True
-		self.source_select.disabled = True
-		self.source_select.update()
-		self.search_field.disabled = True
-		self.search_field.update()
+		self.lock_controls()
 		self.loading_thread = Thread(target = self.load_items_thread)
 		self.loading_thread.start()
 
@@ -521,11 +609,10 @@ class SourcesPanel(ft.Container):
 
 		query = (self.search_field.value or "").strip()
 		if not query:
-			self.search_load_items( self.loaded_items )
+			self.set_items( self.searchable_items )
 			return
 		
-		items = self.loaded_items
-		names = [item.data[0] for item in items]
+		items = self.searchable_items
 		queried = []
 
 		# *query* - Match items that have query somewhere inside of text
@@ -553,6 +640,7 @@ class SourcesPanel(ft.Container):
 
 		#Fuzzy Search Fallback
 		else:
+			names = [item.data[0].lower() for item in items]
 			results = process.extract(
 				query,
 				names,
@@ -562,11 +650,11 @@ class SourcesPanel(ft.Container):
 
 			for item in items:
 				for name, score, _ in results:
-					if item.data[0] == name and score >= minCatch * 100:  # 0–100 scale
+					if item.data[0].lower() == name and score >= minCatch * 100:  # 0–100 scale
 						queried.append(item)
 						break
 
 		queried = sorted(queried, key=lambda x: x.data[0], reverse=False)
 
 		# Update
-		self.search_load_items( queried )
+		self.set_items( queried )

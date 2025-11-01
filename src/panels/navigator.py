@@ -181,14 +181,14 @@ class NavigatorPanel(ft.Container):
 		else:
 			results = process.extract(
 				query,
-				names,
+				[name.lower() for name in names],
 				scorer=fuzz.WRatio,
 				limit=None
 			)
 
 			for item in self.get_items():
 				for name, score, _ in results:
-					if item.name.value == name and score >= minCatch * 100:  # 0–100 scale
+					if item.name.value.lower() == name and score >= minCatch * 100:  # 0–100 scale
 						queried.append(item)
 						break
 
