@@ -20,7 +20,7 @@ VERSION = "1.1.1"
 
 APP_NAME = "Item Builder / Json Editor"
 
-SETTINGS_FILE_NAME = "itemeditor.settings"
+SETTINGS_FILE_NAME = "item_editor.data"
 
 NOT_A_SECRET = uuid.UUID("12345678-1234-5678-1234-567812345678")
 
