@@ -1,6 +1,6 @@
 import flet as ft
 from pathlib import Path
-from threading import Thread
+from threading import Thread, Timer as ThreadTimer
 from datetime import datetime
 import os, json, re, uuid, copy, string, random, io, base64, hashlib, gc, time, traceback, sys
 from rapidfuzz import process, fuzz
@@ -16,7 +16,7 @@ class ExplorerTypes(Enum):
     FILES = 0
     FOLDER = 1
 
-VERSION = "1.0.35"
+VERSION = "1.0.37:04"
 
 APP_NAME = "Item Builder / Json Editor"
 
@@ -24,8 +24,9 @@ NOT_A_SECRET = uuid.UUID("12345678-1234-5678-1234-567812345678")
 
 BGCOLOR = "#161616"
 BGCOLOR2 = ft.Colors.with_opacity(0.1, ft.Colors.BLACK)
-BGCOLOR3 = ft.Colors.with_opacity(0.8, ft.Colors.BROWN)
-BGCOLOR4 = ft.Colors.with_opacity(0.1, ft.Colors.BROWN_100)
+BGCOLOR3 = ft.Colors.with_opacity(0.5, ft.Colors.BLACK)
+
+THEME_COLOR = "#3d2016"
 
 VALUE_TEXT_STYLE = ft.TextStyle(
 	size = 17,

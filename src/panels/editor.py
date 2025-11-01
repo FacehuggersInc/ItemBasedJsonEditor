@@ -78,7 +78,7 @@ class EditorInstanceTab(ft.FloatingActionButton):
 		super().__init__(
 			disabled_elevation=True,
 			shape = ft.RoundedRectangleBorder(radius = 2),
-			bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.BROWN_800),
+			bgcolor = ft.Colors.with_opacity(0.2, BGCOLOR2),
 			height = 45,
 			width = 175,
 			elevation=0,
@@ -153,15 +153,15 @@ class EditorInstanceTab(ft.FloatingActionButton):
 		self.swticher(self.get_instance(), True)
 
 	def select(self):
-		self.bgcolor = ft.Colors.BROWN_500
+		self.bgcolor = BGCOLOR3
 		self.update()
 
 	def select_as_split_tab(self):
-		self.bgcolor = ft.Colors.BROWN_500
+		self.bgcolor = BGCOLOR3
 		self.update()
 
 	def un_select(self):
-		self.bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.BROWN_800)
+		self.bgcolor = BGCOLOR2
 		self.update()
 
 	def show(self, event = None):
@@ -332,6 +332,14 @@ class EditorInstance(ft.Container):
 
 			gc.collect() #memory cleanup
 
+	def on_pair_load_triggers(self, pairs:list[KeyValuePair]):
+		#Make All Key Field Widths Equal
+		for pair in pairs:
+			if pair.parent and hasattr(pair, "key_field"):
+				pair.on_string_changed_key(ignore_field_data = True)
+				if pair.type in (dict, list) and hasattr(pair, "child_container"):
+					self.on_pair_load_triggers(pair.child_container.controls)
+
 	def load(self):
 		self.pairs.controls.clear()
 		pairs = []
@@ -342,6 +350,10 @@ class EditorInstance(ft.Container):
 		
 		self.pairs.controls = pairs
 		self.pairs.update()
+
+		#Triggering for Key Width
+		self.on_pair_load_triggers(self.pairs.controls)
+
 		self._page.app.LOGGER.info(f"EditorInstance <{self.source_item.group}:{self.source_item.name.value}> object was loaded/reloaded")
 
 class EditorPanel(ft.Container):
@@ -491,6 +503,14 @@ class EditorPanel(ft.Container):
 					instance_tab.select()
 				else:
 					instance_tab.select_as_split_tab()
+
+	def update_instances(self):
+		for instance in self.instances.controls:
+			instance.update()
+
+	def update_instance_pairs(self):
+		for instance in self.instances.controls:
+			instance.pairs.update()
 
 	def switch_instance(self, new_instance:EditorInstance = None, as_split:bool = False):
 		if new_instance in self.instances.controls: return

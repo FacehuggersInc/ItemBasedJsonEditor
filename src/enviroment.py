@@ -48,69 +48,190 @@ class EnvironmentPage(ft.Column):
 						
 					]
 				),
+				ToolbarMenuBTN(
+					"View",
+					[	
+						ToolbarItemBTN("Items Panel", ft.Icons.VIEW_AGENDA, self.navigator.toggle),
+						ToolbarItemBTN("Source Panel", ft.Icons.VIEW_AGENDA, self.source.toggle),
+						
+					],
+					ft.Icons.VIEW_QUILT_ROUNDED
+				),
 				self.recent_menu,
 				ToolbarItemBTN("Load", ft.Icons.FILE_OPEN_ROUNDED, self.load_file),
 				ToolbarItemBTN("Sources", ft.Icons.SOURCE_ROUNDED, self.open_sources_dialog),
 			]
 		)
 
+		self.app.subscribe_to_window_event(
+			ft.WindowEventType.RESIZED,
+			self.change_panel_docking
+		)
+
 		## FINAL
+		self.panels = ft.Row(
+			expand = True,
+			spacing = 5,
+			controls = [
+				self.navigator,
+				self.editor,
+				self.source
+			]
+		)
+
+		self.dock = ft.Stack(
+			expand = True,
+			controls = [
+				self.panels
+			]
+		)
+
 		super().__init__(
 			expand = True,
 			spacing = 5,
 			controls = [
 				self.__toolbar,
-				ft.Row(
-					expand = True,
-					spacing = 5,
-					controls = [
-						self.navigator,
-						self.editor,
-						self.source
-					]
-				)
+				self.dock
 			]
 		)
 
+	## OTHER
 	def open_cwd(self, event):
 		os.startfile(os.getcwd())
-
-	def save_sources(self, dialog:SourcesDialog):
-		new = {}
-		for item in dialog.sources.controls:
-			item : SourceItem = item
-
-			path = item.source_field.value
-			if not path: continue
-
-			mod = item.mod
-			opt = None
-			match mod:
-				case "path_splice":
-					opt = item.modifiers.controls[0].value
-				case _: pass
-
-			if not new.get(path):
-				new[path] = {mod:opt}
-			else:
-				new[path][mod] = opt
-
-		self.app.DATA["sources"] = new
-
-		try:
-			self.app.dialog(close = True)
-		except: pass #when app stops, this could error
-
-		#Reload Sources
-		if self.source.visible:
-			self.source.clear()
-			self.source.load()
 
 	def open_sources_dialog(self, event = None):
 		dialog = SourcesDialog(self)
 		dialog.on_dismiss = lambda _, d=dialog: self.save_sources(d)
 		self.app.dialog(dialog)
+	
+	def change_panel_docking(self, event):
+		width = self.app.CORE.window.width
+		if utility.less_than(width, [1000, 1500]):
+			
+			#Floating Dock Navigator
+			if self.navigator in self.panels.controls:
+				nav_was_vis = False
+				if self.navigator.visible:
+					nav_was_vis = True
 
+				self.panels.controls.remove(self.navigator)
+				self.panels.update()
+
+				self.dock.controls.append(self.navigator)
+				self.dock.update()
+
+				self.navigator.left = 0
+				self.navigator.bottom = 0
+				self.navigator.visible = nav_was_vis
+				self.navigator.update()
+				
+				#Panel Opening Bars
+				self.panels.controls.insert(
+					0,
+					ft.FloatingActionButton(
+						bgcolor = ft.Colors.with_opacity(0.8, THEME_COLOR),
+						shape = ft.RoundedRectangleBorder(radius=2),
+						width = 10,
+						height = float("inf"),
+						content=ft.Column(expand =True),
+						tooltip=Tooltip("Open Navigator Panel"),
+						on_click = self.navigator.open
+					)
+				)
+				self.panels.update()
+			
+			if self.navigator in self.dock.controls:
+				self.navigator.height = self.app.CORE.height - 55
+				self.navigator.update()
+			
+			#Floating Dock Source
+			if self.source in self.panels.controls:
+				source_was_vis = False
+				if self.source.visible:
+					source_was_vis = True
+
+				self.panels.controls.remove(self.source)
+				self.panels.update()
+
+				self.dock.controls.append(self.source)
+				self.dock.update()
+
+				self.source.right = 0
+				self.source.bottom = 0
+				self.source.visible = source_was_vis
+				self.source.update()
+
+				#Panel Opening Bars
+				self.panels.controls.insert(
+					15,
+					ft.FloatingActionButton(
+						bgcolor = ft.Colors.with_opacity(0.8, THEME_COLOR),
+						shape = ft.RoundedRectangleBorder(radius=2),
+						width = 10,
+						height = float("inf"),
+						content=ft.Column(expand =True),
+						tooltip=Tooltip("Open Source Panel"),
+						on_click = self.source.open
+					)
+				)
+				self.panels.update()
+
+			if self.source in self.dock.controls:
+				self.source.height = self.app.CORE.height - 55
+				self.source.update()
+
+		else:
+			#Normal
+			#Floating Dock Navigator
+			if self.navigator in self.dock.controls:
+				
+				self.panels.controls.remove( self.panels.controls[0] )
+				self.panels.update()
+
+				nav_was_vis = False
+				if self.navigator.visible:
+					nav_was_vis = True
+
+				self.navigator.left = None
+				self.navigator.bottom = None
+				self.navigator.height = float("inf")
+				self.navigator.update()
+
+				self.dock.controls.remove(self.navigator)
+				self.dock.update()
+
+				self.panels.controls.insert(0, self.navigator)
+				self.panels.update()
+
+				self.navigator.visible = nav_was_vis
+				self.navigator.update()
+
+			#Floating Dock Source
+			if self.source in self.dock.controls:
+				
+				self.panels.controls.remove( self.panels.controls[-1] )
+				self.panels.update()
+
+				source_was_vis = False
+				if self.source.visible:
+					source_was_vis = True
+
+				self.source.right = None
+				self.source.bottom = None
+				self.source.height = float("inf")
+				self.source.update()
+
+				self.dock.controls.remove(self.source)
+				self.dock.update()
+
+				self.panels.controls.insert(15, self.source)
+				self.panels.update()
+
+				self.source.visible = source_was_vis
+				self.source.update()
+
+
+	## LOAD
 	def reload_file(self, event = None):
 		if not self.loaded_paths: return
 
@@ -228,6 +349,38 @@ class EnvironmentPage(ft.Column):
 			type = ft.FilePickerFileType.CUSTOM,
 			accepted_types = ["json"]
 		)
+
+	## SAVE
+	def save_sources(self, dialog:SourcesDialog):
+		new = {}
+		for item in dialog.sources.controls:
+			item : SourceItem = item
+
+			path = item.source_field.value
+			if not path: continue
+
+			mod = item.mod
+			opt = None
+			match mod:
+				case "path_splice":
+					opt = item.modifiers.controls[0].value
+				case _: pass
+
+			if not new.get(path):
+				new[path] = {mod:opt}
+			else:
+				new[path][mod] = opt
+
+		self.app.DATA["sources"] = new
+
+		try:
+			self.app.dialog(close = True)
+		except: pass #when app stops, this could error
+
+		#Reload Sources
+		if self.source.visible:
+			self.source.clear()
+			self.source.load()
 
 	def save_json_file(self, path:str, data:dict):
 		with open(path, "w") as file:

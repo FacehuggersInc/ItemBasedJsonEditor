@@ -2,6 +2,12 @@ from src import *
 
 SUPPORTED_IMAGE_EXTS = {"png", "jpg", "jpeg", "bmp", "gif", "tiff", "webp"}
 
+def less_than(value:int, values:list):
+    for val in values:
+        if value < val:
+            return True
+    return False
+
 def readable_key(key: str) -> str:
 	"""
 	Convert a string key or id into a human-readable string.
@@ -46,19 +52,26 @@ def check_full_text(text:str) -> bool:
 	return has_punctuation or has_newline or has_tab
 
 def looks_like_path(s: str) -> bool:
-	# Common path indicators
-	if any(x in s for x in ("/", "\\", "./", "../")):
-		return True
-	# Drive letter on Windows (C:\something)
-	if re.match(r"^[A-Za-z]:[\\/]", s):
-		return True
-	# Has file extension pattern like "file.txt" or "archive.tar.gz"
-	if re.search(r"\.\w{1,5}$", s):
-		return True
-	# Looks like a hidden file or folder (.git, .env)
-	if s.startswith(".") and len(s) > 1:
-		return True
-	return False
+    # Trim quotes or whitespace
+    s = s.strip().strip('"').strip("'")
+
+    # Obvious directory or relative indicators
+    if any(x in s for x in ("/", "\\", "./", "../")):
+        return True
+
+    # Windows or virtual drive/resource scheme (e.g. C:\, res:\, data:\)
+    if re.match(r"^[A-Za-z0-9_]+:[\\/]", s):
+        return True
+
+    # File extension (.png, .json, .tar.gz, etc.)
+    if re.search(r"\.[A-Za-z0-9]{1,5}$", s):
+        return True
+
+    # Hidden file or folder (.env, .gitignore, etc.)
+    if s.startswith(".") and len(s) > 1:
+        return True
+
+    return False
 
 def load_and_pre_process_image(
 	image_path: str,

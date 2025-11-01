@@ -8,6 +8,8 @@ class ItemBasedJsonEditorApp():
 		self.CORE :ft.Page = None
 		self.FILEMANAGER = ft.FilePicker()
 
+		self.EVENTS = {}
+
 		self.LOGGER = utility.DateLogger(log_dir="logs")
 		self.LOGGER.load()
 		self.LOGGER.info("Initializing")
@@ -37,6 +39,24 @@ class ItemBasedJsonEditorApp():
 		if self.DATA.get("lastdir"):
 			self.global_path = self.DATA["lastdir"]
 
+	def __on_window_event(self, event:ft.WindowEvent):
+		type :ft.WindowEventType = event.type
+		event_calls = self.EVENTS.get(type)
+		if event_calls and len(event_calls) > 0:
+			to_remove = []
+			for call in event_calls:
+				try:
+					call(event)
+				except Exception as e:
+					print(f"On Window Event:{type} Exception:{e} for call:{call}")
+					to_remove.append(call)
+			
+			#Cleanup Broken Events
+			for callable in to_remove:
+				self.EVENTS[type].remove(callable)
+
+
+
 	def __file_manager_callback(self, event:any = None, callback:Optional[Callable] = None):
 		"""Dont Call This. Gets Called when the user selects a file in the File Explorer opened by open_explorer. Will Call the Given Callback Function"""
 		try:
@@ -54,6 +74,11 @@ class ItemBasedJsonEditorApp():
 			self.FILEMANAGER.on_result = None
 		except Exception as e:
 			self.LOGGER.error("Handled File Manager Callback Error: {e}", include_traceback=True)
+
+	def subscribe_to_window_event(self, event:ft.WindowEventType, callable:Callable):
+		if not self.EVENTS.get(event):
+			self.EVENTS[event] = []
+		self.EVENTS[event].append(callable)
 
 	def open_explorer(self, title:str, callback:Callable, looking_for:ExplorerTypes, allow_multiple:bool = False, type:ft.FilePickerFileType = None, accepted_types:list[str] = [], initial_directory:str = None) -> None:
 		"""Opens the File Explorer to get Folders or Files"""
@@ -159,19 +184,22 @@ class ItemBasedJsonEditorApp():
 		self.CORE = page
 
 		self.CORE.theme_mode = "dark"
-		self.CORE.theme = ft.Theme(color_scheme_seed="#3d2016")
+		self.CORE.theme = ft.Theme(color_scheme_seed=THEME_COLOR)
 		self.CORE.title = APP_NAME
-		width = 500
+		width = 950
 		self.CORE.window.min_width = width
+		self.CORE.window.width = width * 2
 		self.CORE.window.height = 850
+
+		self.CORE.padding = 5
+
+		self.CORE.window.on_event = self.__on_window_event
 
 		self.CORE.overlay.append(self.FILEMANAGER)
 
 		self.PAGE = EnvironmentPage(self)
 
 		self.CORE.add( self.PAGE )
-
-		
 
 	def run(self):
 		"""Entrypoint to Application"""

@@ -14,28 +14,63 @@ class KeyValuePair(ft.Container):
 
 		self.__loading_preview = False
 
-		super().__init__()
-		self.key = key
+		self.key_ = key
 		self.value = value
 
 		self.type = self.__resolve_type(value)
 		self.type_history = {}
 
 		# Layout containers
-		self.topr = ft.Row(expand = True, spacing = 2, alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START)
-		self.bottomr = ft.Row(expand=True, spacing = 2, alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.END, visible=False)
-		self.column = ft.Column(expand=True, spacing = 5, controls=[self.topr, self.bottomr])
-		self.browse_button = None
+		self.compact = False
+		self.fields = ft.Row(
+			expand = True,
+			spacing = 2
+		)
 
-		self.border_radius = 6
-		self.bgcolor = BGCOLOR2
-		self.padding = 8
-		self.content = self.column
+		self.topr = ft.Row(
+			expand = True,
+			spacing = 2,
+			alignment=ft.MainAxisAlignment.START, 
+			vertical_alignment=ft.CrossAxisAlignment.START, 
+			controls=[self.fields]
+		)
+		
+		self.bottomr = ft.Row(
+			expand = True,
+			spacing = 2, 
+			alignment=ft.MainAxisAlignment.START, 
+			vertical_alignment=ft.CrossAxisAlignment.END, 
+			visible=False
+		)
+
+		self.column = ft.Column(
+			expand = True,
+			spacing = 5, 
+			controls=[self.topr, self.bottomr]
+		)
+
+		self.browse_button = None
+		self.type_label = None
+
+		super().__init__(
+			border_radius = 6,
+			bgcolor = BGCOLOR2,
+			padding = 8,
+			content = self.column
+		)
 
 		self.registry_visual_debounce = time.time()
+		self.registry_visual_debounce_wait_time = 0.8
 		self.__registry_visual_wait_thread : Thread = None
 
 		self.decide_view() #self.reference created inside here
+
+		self.app.subscribe_to_window_event(
+			ft.WindowEventType.RESIZED,
+			self.reorder
+		)
+
+
 
 	## HELPERS
 	def __resolve_type(self, value):
@@ -121,7 +156,6 @@ class KeyValuePair(ft.Container):
 			for key in references:
 				id = key.rsplit("@", 1)
 				if id[0] in self.reference and not key == self.reference:
-					print(f"Cleaned Up Ref: {id[0]} : {id[1]}")
 					del self.app.DATA["registry"][key]
 			del self.app.DATA["registry"][self.reference]
 
@@ -281,7 +315,6 @@ class KeyValuePair(ft.Container):
 		for key in references:
 			id = key.rsplit("@", 1)
 			if id[0] in self.reference and not key == self.reference:
-				print(f"Cleaned Up Ref: {id[0]} : {id[1]}")
 				del self.app.DATA["registry"][key]
 
 		# Reassign the registry entry
@@ -395,19 +428,45 @@ class KeyValuePair(ft.Container):
 				return default
 		return pointer
 
-	def on_string_changed_key(self, event = None):
-		self.instance.mark_as_edited()
-		self.key = self.key_field.value
-		self.update_registry()
+	def on_string_changed_key(self, event = None, ignore_field_data:bool = False):
+		if not ignore_field_data:
+			self.instance.mark_as_edited()
+			self.key_ = self.key_field.value
+			self.update_registry()
+
 		if hasattr(self, "key_field"):
+			# Calculate the width for the current field
 			self.key_field.width = self.calc_width_via_text_len(self.key_field.value)
+
+			if self.parent:
+				# Determine the *true* max width among all fields now
+				max_width = 0
+				for pair in self.parent.controls:
+					if hasattr(pair, "key_field"):
+						width = pair.calc_width_via_text_len(pair.key_field.value)
+						if width > max_width:
+							max_width = width
+
+				# Apply that max width to all
+				for pair in self.parent.controls:
+					if hasattr(pair, "key_field"):
+						pair.key_field.width = max_width
+						try:
+							pair.key_field.update()
+						except Exception as e:
+							print(f"String Changed Key (Pairs Update): {e}")
+
+			# Update self last
 			try:
 				self.key_field.update()
-			except: pass
+			except Exception as e:
+				print(f"String Changed Key: {e}")
+
 
 	def on_string_changed_value(self, e: ft.ControlEvent = None, ctrl:ft.TextField = None):
 		"""Autodetect Type on Text Change"""
 		self.instance.mark_as_edited()
+		print("\nVALUE CHANGED")
 
 		control: ft.TextField = e.control if e else ctrl
 		text = control.value.strip()
@@ -418,7 +477,9 @@ class KeyValuePair(ft.Container):
 		if not is_dict and not is_list:
 			type_str = self.detect_primitive(text)
 			if type_str == "str":
-				if utility.looks_like_path(text):
+				is_path_like = utility.looks_like_path(text)
+				print(f"IS PATH?: {is_path_like} : {text}")
+				if is_path_like:
 					self.value_field.label = f"Value : PATH"
 					self.value_field.tooltip = Tooltip(text)
 					self.add_preview_image()
@@ -435,6 +496,7 @@ class KeyValuePair(ft.Container):
 				else:
 					if self.browse_button in self.topr.controls:
 						self.topr.controls.remove(self.browse_button)
+						self.topr.update()
 
 					self.remove_preview_image()
 					self.value_field.tooltip = None
@@ -450,6 +512,7 @@ class KeyValuePair(ft.Container):
 			else:
 				if self.browse_button in self.topr.controls:
 					self.topr.controls.remove(self.browse_button)
+					self.topr.update()
 
 				self.remove_preview_image()
 				self.value_field.tooltip = None
@@ -460,6 +523,7 @@ class KeyValuePair(ft.Container):
 		else:
 			if self.browse_button in self.topr.controls:
 				self.topr.controls.remove(self.browse_button)
+				self.topr.update()
 
 			#Change Type to Dict or List
 			self.type_history[self.type] = text
@@ -498,7 +562,7 @@ class KeyValuePair(ft.Container):
 			data = {}
 			for child in self.child_container.controls:
 				# Dict children should always have string keys
-				key = child.key_field.value if hasattr(child, "key_field") else str(child.key)
+				key = child.key_field.value if hasattr(child, "key_field") else str(child.key_)
 				data[key] = child.get_value()
 			return data
 		
@@ -534,12 +598,12 @@ class KeyValuePair(ft.Container):
 			except (ValueError, AttributeError):
 				# Fallback: try to convert stored key to int
 				try:
-					key = int(self.key)
+					key = int(self.key_)
 				except:
 					key = 0
 		else:
 			# For dict items or root items, key is a string
-			key = self.key_field.value if hasattr(self, "key_field") else str(self.key)
+			key = self.key_field.value if hasattr(self, "key_field") else str(self.key_)
 		
 		return (key, self.get_value())
 
@@ -548,6 +612,8 @@ class KeyValuePair(ft.Container):
 	## RENDERS
 	def __set_preview_image_thread(self, image, path):
 		self.__loading_preview = True
+		print("SETTING PREVIEW THREAD")
+
 		parts = os.path.basename(path).split(".")
 		image.content = ft.Image(
 			src_base64 = utility.load_and_pre_process_image( path, max_size=(200, 200) ),
@@ -558,19 +624,20 @@ class KeyValuePair(ft.Container):
 			height = 75,
 			tooltip=Tooltip(f"{parts[0]} : {parts[-1].upper()}", wait_duration=1000)
 		)
-		try:
-			image.update()
-		except: pass
+		image.update()
+		self.topr.update()
 		self.__loading_preview = False
 
 	def set_preview_image(self, path):
-		if self.__loading_preview: return
+		if self.__loading_preview:
+			print("!!! LOADING PREVIEW ALREADY : set_preview_image")
+			return
 		image = ft.SafeArea(
 			minimum_padding = 4,
 			content = ft.Container(  #Place Holder
 				width = 75, height = 75,
 				border_radius=6,
-				bgcolor=ft.Colors.BROWN,
+				bgcolor=THEME_COLOR,
 				content = ft.Icon(ft.Icons.TIMELAPSE_ROUNDED)
 			)
 		)
@@ -579,24 +646,27 @@ class KeyValuePair(ft.Container):
 			path,
 			image
 		]
+
 		self.add_preview_image()
 
 		Thread(target = self.__set_preview_image_thread, args = [image, path], name = "__set_preview_image_thread", daemon=True).start()
 
 	def add_preview_image(self):
 		#Preview Image
+		print("ADD PREVIEW IMAGE")
 		if self.value_field.data and self.value_field.data[0] and os.path.exists(self.value_field.data[0]):
+			print("ADD PREVIEW IMAGE : IN")
 			index = 0
 			for i, ctrl in enumerate(self.topr.controls):
-				if ctrl == self.value_field:
+				if ctrl == self.fields:
 					index = i + 1
 					break
 
 			self.topr.controls.insert(index, self.value_field.data[1])
 
-			try:
-				self.topr.update()
-			except: pass
+			self.topr.update()
+
+			print(f"ADD PREVIEW : HAS ADDED : {self.value_field.data[1] in self.topr.controls}")
 
 	def remove_preview_image(self):
 		if self.value_field.data and self.value_field.data[1] in self.topr.controls:
@@ -617,20 +687,30 @@ class KeyValuePair(ft.Container):
 		self.__loading_preview = False
 
 	def replace_preview_image(self, path):
-		if self.__loading_preview: return
+		if self.__loading_preview:
+			print("!!! LOADING PREVIEW ALREADY : replace_preview_image")
+			return
 		self.new_registry("paths.preview", path)
 		Thread(target = self.__replace_preview_image_thread, args = [path,], name = "__replace_preview_image_thread", daemon=True).start()
 
+	def debounce_waiting(self) -> bool:
+		if time.time() - self.registry_visual_debounce <= self.registry_visual_debounce_wait_time:
+			return True
+		
+		return False
+
 	def __apply_registry_visuals_wait_thread(self, preview_path):
 		#Wait until debounce time reaches over time
-		while time.time() - self.registry_visual_debounce <= 1:
-			time.sleep(0.3)
+		while self.debounce_waiting():
+			time.sleep(0.1)
 
-		time.sleep(0.5)
+		time.sleep(0.1)
 
 		if self.value_field.data:
+			print(f"Replacing Image : {preview_path}")
 			self.replace_preview_image(preview_path)
 		else:
+			print(f"Setting Image : {preview_path}")
 			self.set_preview_image( preview_path )
 
 		self.__registry_visual_wait_thread = None
@@ -643,10 +723,14 @@ class KeyValuePair(ft.Container):
 			expected_data = self.get_registry_value("paths.preview:expected", None)
 			if not expected_data or not expected_data == self.value_field.value.strip():
 				self.__registry_visual_wait_thread = None
+				print("No Expected Value in Field")
 				return
+			
+			print(expected_data)
 
 			self.registry_visual_debounce = time.time()
 			if self.__registry_visual_wait_thread == None:
+				print("Launching Thread")
 				self.__registry_visual_wait_thread = Thread(
 					target = self.__apply_registry_visuals_wait_thread,
 					name = "__apply_registry_visuals_wait_thread",
@@ -656,23 +740,30 @@ class KeyValuePair(ft.Container):
 
 	def decide_view(self):
 		self.topr.controls.clear()
+		self.fields.controls.clear()
 		self.bottomr.controls.clear()
+
+		self.topr.controls.append(self.fields)
 
 		# Key (not shown for list items)
 		if not (self.pair_parent.type == list):
 			self.key_field = ft.TextField(
-				width = self.calc_width_via_text_len(str(self.key)) ,
-				value=str(self.key),
+				width = self.calc_width_via_text_len(str(self.key_)) ,
+				value=str(self.key_),
 				text_style = VALUE_TEXT_STYLE,
 				label=f"Key",
 				label_style=LABEL_TEXT_STYLE,
 				dense=True,
 				border_radius=6,
-				border_width=0,
+				border_width=2,
+				border_color = ft.Colors.with_opacity(0.5, THEME_COLOR),
+				focused_border_color = ft.Colors.with_opacity(0.8, THEME_COLOR),
 				bgcolor=BGCOLOR2,
+				data = "KEY",
 				on_change = self.on_string_changed_key
 			)
-			self.topr.controls.append(self.key_field)
+			self.fields.controls.append(self.key_field)
+			self.on_string_changed_key()
 
 		delete_btn = ft.IconButton(
 			icon=ft.Icons.CLOSE, 
@@ -701,44 +792,26 @@ class KeyValuePair(ft.Container):
 			)
 		)
 
-		if self.type == dict:
-			type_label = ft.Column(
+		if self.type in (dict, list):
+			self.type_label = ft.Column(
 				height = 35,
 				width = 105,
+				visible=True,
 				alignment=ft.MainAxisAlignment.CENTER,
 				horizontal_alignment=ft.CrossAxisAlignment.CENTER,
 				controls = [
 					ft.Text(
-						value = "DICTIONARY",
+						value = "DICTIONARY" if self.type == dict else "LIST",
 						text_align=ft.TextAlign.CENTER,
 						style = ft.TextStyle(
 							size = 15,
-							color = ft.Colors.BROWN,
+							color = ft.Colors.with_opacity(0.5, ft.Colors.WHITE),
 							weight = ft.FontWeight.BOLD
 						)
 					)
 				]
 			)
-			self.topr.controls.insert(2, type_label)
-		elif self.type == list:
-			type_label = ft.Column(
-				height = 35,
-				width = 70,
-				alignment=ft.MainAxisAlignment.CENTER,
-				horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-				controls = [
-					ft.Text(
-						value = "LIST",
-						text_align=ft.TextAlign.CENTER,
-						style = ft.TextStyle(
-							size = 15,
-							color = ft.Colors.BROWN,
-							weight = ft.FontWeight.BOLD
-						)
-					)
-				]
-			)
-			self.topr.controls.insert(2, type_label)
+			self.topr.controls.insert(2, self.type_label)
 
 		# --- Render field based on type ---
 		if self.type in (int, float, bool, str, None):
@@ -795,7 +868,8 @@ class KeyValuePair(ft.Container):
 					
 				)
 				self.browse_button = ft.IconButton(icon=ft.Icons.FOLDER_OPEN, tooltip=Tooltip("Open Folder"), on_click=lambda _, f=self.value_field: __open_value(f))
-				self.topr.controls += [self.value_field, self.browse_button, self.source_btn]
+				self.topr.controls += [self.browse_button, self.source_btn]
+				self.fields.controls.append(self.value_field)
 			else: #Str or Body
 				body = utility.check_full_text(val)
 				self.value_field = ft.TextField(
@@ -813,7 +887,8 @@ class KeyValuePair(ft.Container):
 					on_change=self.on_string_changed_value,
 					
 				)
-				self.topr.controls += [self.value_field, self.source_btn]
+				self.topr.controls += [self.source_btn]
+				self.fields.controls.append(self.value_field)
 		else:
 			type_str = self.detect_primitive(val)
 
@@ -831,7 +906,8 @@ class KeyValuePair(ft.Container):
 				on_change=self.on_string_changed_value,
 				
 			)
-			self.topr.controls += [self.value_field, self.source_btn]
+			self.topr.controls += [self.source_btn]
+			self.fields.controls.append(self.value_field)
 
 	def change_type(self, type:any):
 		self.type_history[self.type] = self.value
@@ -891,7 +967,68 @@ class KeyValuePair(ft.Container):
 		self.bottomr.visible = True
 		self.bottomr.controls += [self.child_container]
 
+	def reorder(self, event:ft.WindowEvent):
+		print(f"reording triggered")
+		triggered = False
 
+		#Get Position Index
+		index = 0
+		for i, ctrl in enumerate(self.topr.controls):
+			index = i
+			if ctrl == self.fields:
+				break
+
+		#Check Size
+		width = self.app.CORE.window.width
+		if utility.less_than(width, [1000, 1500]):
+			triggered = True
+
+		#Reorder
+		if triggered and not self.compact:
+			self.compact = True
+
+			controls = self.fields.controls
+			self.topr.controls.remove(self.fields)
+			self.app.PAGE.editor.update_instance_pairs()
+
+			if width < 1000 and len(self.app.PAGE.editor.instances.controls) == 1:
+				self.fields = ft.Column(
+					expand = True,
+					spacing = 8,
+					controls=controls
+				)
+			elif width < 1500 and len(self.app.PAGE.editor.instances.controls) > 1:
+				self.fields = ft.Column(
+					expand = True,
+					spacing = 8,
+					controls=controls
+				)
+
+			if self.type_label and self.type_label.visible:
+				self.type_label.visible = False
+
+			self.topr.controls.insert(index, self.fields)
+			self.app.PAGE.editor.update_instance_pairs()
+
+		#Reset
+		if self.compact and not triggered:
+			self.compact = False
+
+			controls = self.fields.controls
+			self.topr.controls.remove(self.fields)
+			self.app.PAGE.editor.update_instance_pairs()
+
+			self.fields = ft.Row(
+				expand = True,
+				spacing = 2,
+				controls=controls
+			)
+
+			if self.type_label and not self.type_label.visible:
+				self.type_label.visible = True
+
+			self.topr.controls.insert(index, self.fields)
+			self.app.PAGE.editor.update_instance_pairs()
 
 	## CHILDREN
 	def render_children(self):
@@ -915,6 +1052,8 @@ class KeyValuePair(ft.Container):
 		self.render_children()
 		self.update()
 		self.instance.mark_as_edited()
+
+
 
 class KeyedItem(ft.FloatingActionButton):
 	def __init__(self, group_key:str, key:str, data:dict, on_click:Callable, on_copy:Callable, on_remove:Callable):
@@ -986,8 +1125,8 @@ class KeyedItem(ft.FloatingActionButton):
 		super().__init__(
 			disabled_elevation=True,
 			shape = ft.RoundedRectangleBorder(radius = 6),
-			bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.BROWN),
-			width = float("inf"),
+			bgcolor = ft.Colors.with_opacity(0.2, THEME_COLOR),
+			width = 350,
 			height = 35,
 			content = ft.GestureDetector(
 				on_enter = self.show,
@@ -1000,7 +1139,7 @@ class KeyedItem(ft.FloatingActionButton):
 						height = 35,
 						controls = [
 							ft.Row(
-								width = float("inf"),
+								width = 350,
 								controls = [
 									self.name,
 									self.buttons

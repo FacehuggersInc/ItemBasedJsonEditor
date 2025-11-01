@@ -18,7 +18,7 @@ class NavigatorPanel(ft.Container):
 			on_change = self.load_items,
 			enable_search = False,
 			dense=True,
-			width = 285,
+			width = 250,
 			filled=True,
 			fill_color=BGCOLOR,
 			text_style = ft.TextStyle(
@@ -80,6 +80,13 @@ class NavigatorPanel(ft.Container):
 			width = 350,
 			bgcolor = ft.Colors.SECONDARY_CONTAINER,
 			padding = 2,
+			shadow = [
+				ft.BoxShadow(
+					2, 2, ft.Colors.with_opacity(0.5, "black"),
+					ft.Offset(2, 0),
+					ft.ShadowBlurStyle.NORMAL
+				)
+			],
 			content = ft.Container(
 				expand = True,
 				border_radius = 6,
@@ -100,6 +107,7 @@ class NavigatorPanel(ft.Container):
 									icon_size = 32,
 									tooltip=Tooltip("Add or Modify Item Template")
 								),
+								ft.IconButton(ft.Icons.ARROW_BACK_IOS_ROUNDED, on_click=self.close, icon_size=15, tooltip=Tooltip("Close Navigator"))
 							]
 						),
 						self.search_field,
@@ -109,6 +117,21 @@ class NavigatorPanel(ft.Container):
 			)
 		)
 
+
+	## CORE
+	def toggle(self, event = None):
+		if self.visible:
+			self.close(event)
+		else:
+			self.open(event)
+
+	def open(self, event = None):
+		self.visible = True
+		self.update()
+
+	def close(self, event = None):
+		self.visible = False
+		self.update()
 
 
 	## SEARCHING
@@ -318,7 +341,6 @@ class NavigatorPanel(ft.Container):
 		if force_refresh:
 			for instance in self._page.editor.instances.controls:
 				instance.load()
-
 
 	def clear(self):
 		self.source = None
