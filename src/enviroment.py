@@ -105,7 +105,131 @@ class EnvironmentPage(ft.Column):
 		self.app.dialog(dialog)
 	
 	def change_panel_docking(self, event):
-		pass
+		width = self.app.CORE.window.width
+		if utility.less_than(width, [1000, 1500]):
+			
+			#Floating Dock Navigator
+			if self.navigator in self.panels.controls:
+				nav_was_vis = False
+				if self.navigator.visible:
+					nav_was_vis = True
+
+				self.panels.controls.remove(self.navigator)
+				self.panels.update()
+
+				self.dock.controls.append(self.navigator)
+				self.dock.update()
+
+				self.navigator.left = 0
+				self.navigator.bottom = 0
+				self.navigator.visible = nav_was_vis
+				self.navigator.update()
+				
+				#Panel Opening Bars
+				self.panels.controls.insert(
+					0,
+					ft.FloatingActionButton(
+						bgcolor = ft.Colors.with_opacity(0.8, THEME_COLOR),
+						shape = ft.RoundedRectangleBorder(radius=2),
+						width = 10,
+						height = float("inf"),
+						content=ft.Column(expand =True),
+						tooltip=Tooltip("Open Navigator Panel"),
+						on_click = self.navigator.open
+					)
+				)
+				self.panels.update()
+			
+			if self.navigator in self.dock.controls:
+				self.navigator.height = self.app.CORE.height - 55
+				self.navigator.update()
+			
+			#Floating Dock Source
+			if self.source in self.panels.controls:
+				source_was_vis = False
+				if self.source.visible:
+					source_was_vis = True
+
+				self.panels.controls.remove(self.source)
+				self.panels.update()
+
+				self.dock.controls.append(self.source)
+				self.dock.update()
+
+				self.source.right = 0
+				self.source.bottom = 0
+				self.source.visible = source_was_vis
+				self.source.update()
+
+				#Panel Opening Bars
+				self.panels.controls.insert(
+					15,
+					ft.FloatingActionButton(
+						bgcolor = ft.Colors.with_opacity(0.8, THEME_COLOR),
+						shape = ft.RoundedRectangleBorder(radius=2),
+						width = 10,
+						height = float("inf"),
+						content=ft.Column(expand =True),
+						tooltip=Tooltip("Open Source Panel"),
+						on_click = self.source.open
+					)
+				)
+				self.panels.update()
+
+			if self.source in self.dock.controls:
+				self.source.height = self.app.CORE.height - 55
+				self.source.update()
+
+		else:
+			#Normal
+			#Floating Dock Navigator
+			if self.navigator in self.dock.controls:
+				
+				self.panels.controls.remove( self.panels.controls[0] )
+				self.panels.update()
+
+				nav_was_vis = False
+				if self.navigator.visible:
+					nav_was_vis = True
+
+				self.navigator.left = None
+				self.navigator.bottom = None
+				self.navigator.height = float("inf")
+				self.navigator.update()
+
+				self.dock.controls.remove(self.navigator)
+				self.dock.update()
+
+				self.panels.controls.insert(0, self.navigator)
+				self.panels.update()
+
+				self.navigator.visible = nav_was_vis
+				self.navigator.update()
+
+			#Floating Dock Source
+			if self.source in self.dock.controls:
+				
+				self.panels.controls.remove( self.panels.controls[-1] )
+				self.panels.update()
+
+				source_was_vis = False
+				if self.source.visible:
+					source_was_vis = True
+
+				self.source.right = None
+				self.source.bottom = None
+				self.source.height = float("inf")
+				self.source.update()
+
+				self.dock.controls.remove(self.source)
+				self.dock.update()
+
+				self.panels.controls.insert(15, self.source)
+				self.panels.update()
+
+				self.source.visible = source_was_vis
+				self.source.update()
+
 
 	## LOAD
 	def reload_file(self, event = None):

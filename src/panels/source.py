@@ -111,6 +111,13 @@ class SourcesPanel(ft.Container):
 			width = 350,
 			bgcolor = ft.Colors.SECONDARY_CONTAINER,
 			padding = 2,
+			shadow = [
+				ft.BoxShadow(
+					2, 2, ft.Colors.with_opacity(0.5, "black"),
+					ft.Offset(-2, 0),
+					ft.ShadowBlurStyle.NORMAL
+				)
+			],
 			content = ft.Container(
 				expand = True,
 				border_radius = 6,

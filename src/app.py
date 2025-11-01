@@ -41,10 +41,21 @@ class ItemBasedJsonEditorApp():
 
 	def __on_window_event(self, event:ft.WindowEvent):
 		type :ft.WindowEventType = event.type
-		for event_type in self.EVENTS:
-			if event_type == type:
-				for call in self.EVENTS[event_type]:
+		event_calls = self.EVENTS.get(type)
+		if event_calls and len(event_calls) > 0:
+			to_remove = []
+			for call in event_calls:
+				try:
 					call(event)
+				except Exception as e:
+					print(f"On Window Event:{type} Exception:{e} for call:{call}")
+					to_remove.append(call)
+			
+			#Cleanup Broken Events
+			for callable in to_remove:
+				self.EVENTS[type].remove(callable)
+
+
 
 	def __file_manager_callback(self, event:any = None, callback:Optional[Callable] = None):
 		"""Dont Call This. Gets Called when the user selects a file in the File Explorer opened by open_explorer. Will Call the Given Callback Function"""

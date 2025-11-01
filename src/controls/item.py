@@ -65,6 +65,11 @@ class KeyValuePair(ft.Container):
 
 		self.decide_view() #self.reference created inside here
 
+		self.app.subscribe_to_window_event(
+			ft.WindowEventType.RESIZED,
+			self.reorder
+		)
+
 
 
 	## HELPERS
@@ -963,6 +968,7 @@ class KeyValuePair(ft.Container):
 		self.bottomr.controls += [self.child_container]
 
 	def reorder(self, event:ft.WindowEvent):
+		print(f"reording triggered")
 		triggered = False
 
 		#Get Position Index
@@ -971,16 +977,10 @@ class KeyValuePair(ft.Container):
 			index = i
 			if ctrl == self.fields:
 				break
-			
-		def less_than(value:int, values:list):
-			for val in values:
-				if value < val:
-					return True
-			return False
 
 		#Check Size
 		width = self.app.CORE.window.width
-		if less_than(width, [1000, 1500]):
+		if utility.less_than(width, [1000, 1500]):
 			triggered = True
 
 		#Reorder
@@ -1126,7 +1126,7 @@ class KeyedItem(ft.FloatingActionButton):
 			disabled_elevation=True,
 			shape = ft.RoundedRectangleBorder(radius = 6),
 			bgcolor = ft.Colors.with_opacity(0.2, THEME_COLOR),
-			width = float("inf"),
+			width = 350,
 			height = 35,
 			content = ft.GestureDetector(
 				on_enter = self.show,
@@ -1139,7 +1139,7 @@ class KeyedItem(ft.FloatingActionButton):
 						height = 35,
 						controls = [
 							ft.Row(
-								width = float("inf"),
+								width = 350,
 								controls = [
 									self.name,
 									self.buttons

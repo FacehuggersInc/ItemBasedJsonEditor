@@ -2,6 +2,12 @@ from src import *
 
 SUPPORTED_IMAGE_EXTS = {"png", "jpg", "jpeg", "bmp", "gif", "tiff", "webp"}
 
+def less_than(value:int, values:list):
+    for val in values:
+        if value < val:
+            return True
+    return False
+
 def readable_key(key: str) -> str:
 	"""
 	Convert a string key or id into a human-readable string.
