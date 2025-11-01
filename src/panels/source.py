@@ -39,6 +39,7 @@ class SourcesPanel(ft.Container):
 
 		self.current_dir = ft.Text(
 			"",
+			width = 150,
 			text_align=ft.TextAlign.CENTER,
 			overflow=ft.TextOverflow.FADE,
 			style = ft.TextStyle(

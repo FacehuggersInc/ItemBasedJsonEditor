@@ -100,22 +100,76 @@ def normalize_path(p: str) -> str:
     # Normalize slashes and remove duplicates
     return re.sub(r"[\\/]+", "/", p.strip())
 
+
+def split_scheme(path: str):
+    """
+    Split a path into (scheme, rest, preferred_sep).
+    scheme will be like 'F:' or 'res:' or ''.
+    preferred_sep is '\' if the original used backslashes only, otherwise '/'.
+    The rest is returned with forward-slash separators for easier matching.
+    """
+    p = path.strip()
+    # detect preferred sep (if path contains backslashes and no forward slashes, prefer backslash)
+    pref_sep = '\\' if ('\\' in p and '/' not in p) else '/'
+    m = re.match(r'^([A-Za-z0-9_]+):(/{2,}|[\\/])?(.*)$', p)
+    if m:
+        scheme = m.group(1) + ':'
+        rest = (m.group(3) or '').replace('\\', '/')
+        return scheme, rest, pref_sep
+    return '', p.replace('\\', '/'), pref_sep
+
 def reverse_path_splice(base_path: str, prefixes: list[str]) -> str | None:
-    base_norm = normalize_path(base_path)
+    """
+    Attempt to splice base_path onto one of the prefixes.
+    Returns the new path using the prefix's scheme/drive and separator style, or None if no match.
+    """
+    base_scheme, base_rest, _ = split_scheme(base_path)
+    base_comps = [c for c in base_rest.split('/') if c != '']
 
     for prefix in prefixes:
-        pref_norm = normalize_path(prefix)
+        pref_scheme, pref_rest, pref_sep = split_scheme(prefix)
+        pref_comps = [c for c in pref_rest.split('/') if c != '']
 
-        # Split the "scheme" (res:, A:, etc.) from the path part
-        base_scheme, _, base_rest = base_norm.partition(":/")
-        pref_scheme, _, pref_rest = pref_norm.partition(":/")
+        # 1) Try the common case: suffix of prefix == prefix of base.
+        #    (e.g. prefix ends with "assets/sprites/RPG Icons Pixel Art"
+        #     and base starts with "assets/sprites/RPG Icons Pixel Art/...")
+        max_k = min(len(pref_comps), len(base_comps))
+        for k in range(max_k, 0, -1):
+            if [x.lower() for x in pref_comps[-k:]] == [x.lower() for x in base_comps[:k]]:
+                # matched segment; result = full prefix (with its scheme) + remainder of base after k components
+                tail = base_comps[k:]
+                parts = []
+                if pref_scheme:
+                    parts.append(pref_scheme)
+                parts.extend(pref_comps)
+                parts.extend(tail)
+                # build string using prefix's preferred separator
+                if parts and parts[0].endswith(':'):
+                    # scheme present: join like "F:\a\b" or "res://a/b"
+                    if len(parts) == 1:
+                        return parts[0] + pref_sep
+                    return parts[0] + pref_sep + pref_sep.join(parts[1:])
+                else:
+                    return pref_sep.join(parts)
 
-        # Try to find where the prefix's rest matches inside the base rest
-        idx = base_rest.lower().find(pref_rest.lower())
-        if idx != -1:
-            # Splice together: new scheme + prefix rest + base tail
-            tail = base_rest[idx + len(pref_rest):]
-            return f"{pref_scheme}:/{pref_rest}{tail}"
+        # 2) Fallback: if the full prefix components appear somewhere inside base components,
+        #    use prefix + whatever comes after it in base.
+        #    (less common, but can be useful)
+        if len(pref_comps) <= len(base_comps):
+            for i in range(len(base_comps) - len(pref_comps) + 1):
+                if [x.lower() for x in base_comps[i:i+len(pref_comps)]] == [x.lower() for x in pref_comps]:
+                    tail = base_comps[i+len(pref_comps):]
+                    parts = []
+                    if pref_scheme:
+                        parts.append(pref_scheme)
+                    parts.extend(pref_comps)
+                    parts.extend(tail)
+                    if parts and parts[0].endswith(':'):
+                        if len(parts) == 1:
+                            return parts[0] + pref_sep
+                        return parts[0] + pref_sep + pref_sep.join(parts[1:])
+                    else:
+                        return pref_sep.join(parts)
 
     return None
 
