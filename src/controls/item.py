@@ -751,7 +751,6 @@ class KeyValuePair(ft.Container):
 			self.__value_on_change_check_thread = Thread(target = self.__check_for_special_instances_thread)
 			self.__value_on_change_check_thread = self.__value_on_change_check_thread.start()
 
-
 	def decide_view(self):
 		self.topr.controls.clear()
 		self.fields.controls.clear()
@@ -770,8 +769,8 @@ class KeyValuePair(ft.Container):
 				dense=True,
 				border_radius=6,
 				border_width=2,
-				border_color = ft.Colors.with_opacity(0.5, THEME_COLOR),
-				focused_border_color = ft.Colors.with_opacity(0.8, THEME_COLOR),
+				border_color = THEME_COLOR,
+				focused_border_color = THEME_COLOR,
 				bgcolor=BGCOLOR2,
 				data = "KEY",
 				on_change = self.on_string_changed_key
