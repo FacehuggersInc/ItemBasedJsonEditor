@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 	try:
 		# 1. Download the repo zip
-		log(f"Extracting : {github_zip_url}")
+		log(f"Downloading : {github_zip_url}")
 		with urllib.request.urlopen(github_zip_url) as response, open(zip_path, "wb") as out_file:
 			shutil.copyfileobj(response, out_file)
 
