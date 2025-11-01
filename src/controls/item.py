@@ -63,6 +63,8 @@ class KeyValuePair(ft.Container):
 		self.registry_visual_debounce_wait_time = 0.8
 		self.__registry_visual_wait_thread : Thread = None
 
+		self.__value_on_change_check_thread : Thread = None
+
 		self.decide_view() #self.reference created inside here
 
 		self.app.subscribe_to_window_event(
@@ -322,7 +324,7 @@ class KeyValuePair(ft.Container):
 			self.app.DATA["registry"][new_ref] = ref_val
 
 		# Persist the changes
-		self.check_registry_visuals()
+		self.check_for_special_instances()
 
 	def new_registry_old(self, key_path, value):
 		if self.reference not in self.app.DATA["registry"]:
@@ -454,19 +456,17 @@ class KeyValuePair(ft.Container):
 						try:
 							pair.key_field.update()
 						except Exception as e:
-							print(f"String Changed Key (Pairs Update): {e}")
+							pass
 
 			# Update self last
 			try:
 				self.key_field.update()
 			except Exception as e:
-				print(f"String Changed Key: {e}")
-
+				pass
 
 	def on_string_changed_value(self, e: ft.ControlEvent = None, ctrl:ft.TextField = None):
 		"""Autodetect Type on Text Change"""
 		self.instance.mark_as_edited()
-		print("\nVALUE CHANGED")
 
 		control: ft.TextField = e.control if e else ctrl
 		text = control.value.strip()
@@ -478,7 +478,6 @@ class KeyValuePair(ft.Container):
 			type_str = self.detect_primitive(text)
 			if type_str == "str":
 				is_path_like = utility.looks_like_path(text)
-				print(f"IS PATH?: {is_path_like} : {text}")
 				if is_path_like:
 					self.value_field.label = f"Value : PATH"
 					self.value_field.tooltip = Tooltip(text)
@@ -612,7 +611,6 @@ class KeyValuePair(ft.Container):
 	## RENDERS
 	def __set_preview_image_thread(self, image, path):
 		self.__loading_preview = True
-		print("SETTING PREVIEW THREAD")
 
 		parts = os.path.basename(path).split(".")
 		image.content = ft.Image(
@@ -630,7 +628,6 @@ class KeyValuePair(ft.Container):
 
 	def set_preview_image(self, path):
 		if self.__loading_preview:
-			print("!!! LOADING PREVIEW ALREADY : set_preview_image")
 			return
 		image = ft.SafeArea(
 			minimum_padding = 4,
@@ -653,9 +650,7 @@ class KeyValuePair(ft.Container):
 
 	def add_preview_image(self):
 		#Preview Image
-		print("ADD PREVIEW IMAGE")
 		if self.value_field.data and self.value_field.data[0] and os.path.exists(self.value_field.data[0]):
-			print("ADD PREVIEW IMAGE : IN")
 			index = 0
 			for i, ctrl in enumerate(self.topr.controls):
 				if ctrl == self.fields:
@@ -665,8 +660,6 @@ class KeyValuePair(ft.Container):
 			self.topr.controls.insert(index, self.value_field.data[1])
 
 			self.topr.update()
-
-			print(f"ADD PREVIEW : HAS ADDED : {self.value_field.data[1] in self.topr.controls}")
 
 	def remove_preview_image(self):
 		if self.value_field.data and self.value_field.data[1] in self.topr.controls:
@@ -688,7 +681,6 @@ class KeyValuePair(ft.Container):
 
 	def replace_preview_image(self, path):
 		if self.__loading_preview:
-			print("!!! LOADING PREVIEW ALREADY : replace_preview_image")
 			return
 		self.new_registry("paths.preview", path)
 		Thread(target = self.__replace_preview_image_thread, args = [path,], name = "__replace_preview_image_thread", daemon=True).start()
@@ -707,36 +699,58 @@ class KeyValuePair(ft.Container):
 		time.sleep(0.1)
 
 		if self.value_field.data:
-			print(f"Replacing Image : {preview_path}")
 			self.replace_preview_image(preview_path)
 		else:
-			print(f"Setting Image : {preview_path}")
 			self.set_preview_image( preview_path )
 
 		self.__registry_visual_wait_thread = None
 
-	def check_registry_visuals(self):
+	def __check_for_special_instances_thread(self):
+		if not hasattr(self, "value_field"):
+			self.__value_on_change_check_thread = None
+			return
+		
+		time.sleep(0.3)
+		
 		preview_path = self.get_registry_value("paths.preview", None)
-		if preview_path and hasattr(self, "value_field"):
-
+		if preview_path:
 			#Check if expected value IS the value of value_field
 			expected_data = self.get_registry_value("paths.preview:expected", None)
 			if not expected_data or not expected_data == self.value_field.value.strip():
 				self.__registry_visual_wait_thread = None
-				print("No Expected Value in Field")
 				return
-			
-			print(expected_data)
 
 			self.registry_visual_debounce = time.time()
 			if self.__registry_visual_wait_thread == None:
-				print("Launching Thread")
 				self.__registry_visual_wait_thread = Thread(
 					target = self.__apply_registry_visuals_wait_thread,
 					name = "__apply_registry_visuals_wait_thread",
 					args = [preview_path,]
 				)
 				self.__registry_visual_wait_thread.start()
+
+		#If Not Registry Visual | Check as Path & Reverse Path Splice Against Sources
+		else:
+			is_path = utility.looks_like_path(self.value_field.value.strip())
+			if is_path:
+				sources : dict = self.app.DATA["sources"]
+
+				paths = list(sources.keys())
+				if not paths: return
+
+				reverse_path_splice = utility.reverse_path_splice(self.value_field.value.strip(), paths)
+				if reverse_path_splice and os.path.exists(reverse_path_splice):
+					self.new_registry("paths.preview", reverse_path_splice)
+					self.new_registry("paths.preview:expected", self.value_field.value.strip())
+					self.set_preview_image(reverse_path_splice)
+		
+		self.__value_on_change_check_thread = None
+
+	def check_for_special_instances(self):
+		if self.__value_on_change_check_thread == None:
+			self.__value_on_change_check_thread = Thread(target = self.__check_for_special_instances_thread)
+			self.__value_on_change_check_thread = self.__value_on_change_check_thread.start()
+
 
 	def decide_view(self):
 		self.topr.controls.clear()
@@ -762,7 +776,9 @@ class KeyValuePair(ft.Container):
 				data = "KEY",
 				on_change = self.on_string_changed_key
 			)
+
 			self.fields.controls.append(self.key_field)
+
 			self.on_string_changed_key()
 
 		delete_btn = ft.IconButton(
@@ -825,7 +841,7 @@ class KeyValuePair(ft.Container):
 			pass
 
 		self.reference = self.create_reference()
-		self.check_registry_visuals()
+		self.check_for_special_instances()
 
 	def render_primitive(self):
 		val = str(self.value)
@@ -968,7 +984,6 @@ class KeyValuePair(ft.Container):
 		self.bottomr.controls += [self.child_container]
 
 	def reorder(self, event:ft.WindowEvent):
-		print(f"reording triggered")
 		triggered = False
 
 		#Get Position Index
