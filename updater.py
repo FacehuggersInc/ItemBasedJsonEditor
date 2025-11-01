@@ -1,9 +1,4 @@
-import os
-import sys
-import shutil
-import tempfile
-import zipfile
-import subprocess
+import os, sys, time, shutil, zipfile, subprocess, tempfile
 import urllib.request
 
 def log(text:str):
@@ -56,6 +51,8 @@ if __name__ == "__main__":
 				shutil.copy2(src_file, dst_file)
 
 		# 5. Relaunch target
+		log(f"Waiting for files to settle ...")
+		time.sleep(1)
 		log(f"Relaunching ... : {relaunch_path}")
 		if relaunch_path.lower().endswith(".py"):
 			subprocess.Popen([sys.executable, relaunch_path] + relaunch_args)
