@@ -483,11 +483,7 @@ class KeyValuePair(ft.Container):
 					self.value_field.tooltip = Tooltip(text)
 					self.add_preview_image()
 
-					index = 0
-					for i, ctrl in enumerate(self.topr.controls):
-						if ctrl == self.source_btn:
-							index = i - 1
-							break
+					index = len(self.topr.controls) + 1
 					
 					self.topr.controls.insert(index, self.browse_button)
 					self.topr.update()
