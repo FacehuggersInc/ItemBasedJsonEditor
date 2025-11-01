@@ -65,8 +65,6 @@ class KeyValuePair(ft.Container):
 
 		self.decide_view() #self.reference created inside here
 
-		
-
 
 
 	## HELPERS
@@ -425,13 +423,40 @@ class KeyValuePair(ft.Container):
 				return default
 		return pointer
 
-	def on_string_changed_key(self, event = None):
-		self.instance.mark_as_edited()
-		self.key_ = self.key_field.value
-		self.update_registry()
+	def on_string_changed_key(self, event = None, ignore_field_data:bool = False):
+		if not ignore_field_data:
+			self.instance.mark_as_edited()
+			self.key_ = self.key_field.value
+			self.update_registry()
+
 		if hasattr(self, "key_field"):
+			# Calculate the width for the current field
 			self.key_field.width = self.calc_width_via_text_len(self.key_field.value)
-			self.key_field.update()
+
+			if self.parent:
+				# Determine the *true* max width among all fields now
+				max_width = 0
+				for pair in self.parent.controls:
+					if hasattr(pair, "key_field"):
+						width = pair.calc_width_via_text_len(pair.key_field.value)
+						if width > max_width:
+							max_width = width
+
+				# Apply that max width to all
+				for pair in self.parent.controls:
+					if hasattr(pair, "key_field"):
+						pair.key_field.width = max_width
+						try:
+							pair.key_field.update()
+						except Exception as e:
+							print(f"String Changed Key (Pairs Update): {e}")
+
+			# Update self last
+			try:
+				self.key_field.update()
+			except Exception as e:
+				print(f"String Changed Key: {e}")
+
 
 	def on_string_changed_value(self, e: ft.ControlEvent = None, ctrl:ft.TextField = None):
 		"""Autodetect Type on Text Change"""
@@ -725,12 +750,15 @@ class KeyValuePair(ft.Container):
 				label_style=LABEL_TEXT_STYLE,
 				dense=True,
 				border_radius=6,
-				border_width=0,
+				border_width=2,
+				border_color = ft.Colors.with_opacity(0.5, THEME_COLOR),
+				focused_border_color = ft.Colors.with_opacity(0.8, THEME_COLOR),
 				bgcolor=BGCOLOR2,
 				data = "KEY",
 				on_change = self.on_string_changed_key
 			)
 			self.fields.controls.append(self.key_field)
+			self.on_string_changed_key()
 
 		delete_btn = ft.IconButton(
 			icon=ft.Icons.CLOSE, 

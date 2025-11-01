@@ -332,6 +332,14 @@ class EditorInstance(ft.Container):
 
 			gc.collect() #memory cleanup
 
+	def on_pair_load_triggers(self, pairs:list[KeyValuePair]):
+		#Make All Key Field Widths Equal
+		for pair in pairs:
+			if pair.parent and hasattr(pair, "key_field"):
+				pair.on_string_changed_key(ignore_field_data = True)
+				if pair.type in (dict, list) and hasattr(pair, "child_container"):
+					self.on_pair_load_triggers(pair.child_container.controls)
+
 	def load(self):
 		self.pairs.controls.clear()
 		pairs = []
@@ -342,6 +350,10 @@ class EditorInstance(ft.Container):
 		
 		self.pairs.controls = pairs
 		self.pairs.update()
+
+		#Triggering for Key Width
+		self.on_pair_load_triggers(self.pairs.controls)
+
 		self._page.app.LOGGER.info(f"EditorInstance <{self.source_item.group}:{self.source_item.name.value}> object was loaded/reloaded")
 
 class EditorPanel(ft.Container):
