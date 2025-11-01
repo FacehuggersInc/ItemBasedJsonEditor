@@ -4,12 +4,13 @@ import os, sys, subprocess
 #Flet docs : https://flet.dev/docs/controls/layout
 
 def update():
+	here = os.path.dirname( sys.argv[0] )
 	subprocess.Popen([
 		sys.executable,                 # ensures same Python interpreter
-		"updater.py",                   # script to run
-		os.getcwd(),                    # install path
+		os.path.join(here, "updater.py"),                   # script to run
+		here,                    # install path
 		"https://github.com/FacehuggersInc/ItemBasedJsonEditor/archive/refs/heads/main.zip",  # ZIP download URL
-		r"A:\PY\Projects\FLET\QuickJsonEditor\main.py",  # relaunch path
+		os.path.join(here, "main.py"),  # relaunch path
 		"force"                         # updater bypass for this file
 	])
 	sys.exit(1)
