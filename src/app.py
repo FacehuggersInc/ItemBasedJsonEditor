@@ -28,12 +28,20 @@ class ItemBasedJsonEditorApp():
 			"sources" : {},
 			"registry": {}
 		}
-		if os.path.exists("settings.json"):
+		if os.path.exists(SETTINGS_FILE_NAME):
 			self.LOGGER.info("Loading Data (settings.json) ...")
-			with open("settings.json", "r") as datafile:
+			with open(SETTINGS_FILE_NAME, "r") as datafile:
 				loaded = json.load(datafile)
 				for key, item in loaded.items():
 					self.DATA[key] = item
+		else:
+			#Check Old Settings File Name
+			if os.path.exists("settings.json"):
+				with open("settings.json", "r") as datafile:
+					loaded = json.load(datafile)
+					if loaded.keys() == self.DATA.keys():
+						for key, item in loaded.items():
+							self.DATA[key] = item
 
 		self.global_path = f"C:\\"
 		if self.DATA.get("lastdir"):
@@ -218,7 +226,7 @@ class ItemBasedJsonEditorApp():
 		#Save Data
 		self.DATA["recent"] = self.PAGE.recent_files
 		self.DATA["lastdir"] = self.global_path
-		with open("settings.json", "w") as datafile:
+		with open(SETTINGS_FILE_NAME, "w") as datafile:
 			json.dump(self.DATA, datafile, indent = 4)
 
 		self.LOGGER.log("Saved Instances.")

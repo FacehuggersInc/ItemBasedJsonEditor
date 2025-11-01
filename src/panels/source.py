@@ -222,6 +222,7 @@ class SourcesPanel(ft.Container):
 						self.target.replace_preview_image(orig_path)
 					else:
 						self.target.set_preview_image(orig_path)
+			case _: pass
 		
 		self.target.value_field.update()
 		self.target.on_string_changed_value(ctrl = self.target.value_field)
