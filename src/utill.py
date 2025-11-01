@@ -1,5 +1,17 @@
 from src import *
 
+import re
+import json
+import ast
+
+# Regex helpers (kept somewhat conservative)
+_RE_BOM = re.compile(r'^\ufeff')
+_RE_JS_SINGLE_LINE_COMMENT = re.compile(r'//.*?(?=\n|$)')
+_RE_JS_MULTI_LINE_COMMENT = re.compile(r'/\*.*?\*/', re.DOTALL)
+_RE_TRAILING_COMMAS = re.compile(r',\s*(?=[}\]])')  # comma before } or ]
+_RE_PY_NONE_TRUE_FALSE = re.compile(r'\b(None|True|False)\b')
+_RE_UNQUOTED_KEYS = re.compile(r'(?P<prefix>[{,\s])(?P<key>[A-Za-z_][A-Za-z0-9_\-]*)\s*:(?=\s)')
+
 SUPPORTED_IMAGE_EXTS = {"png", "jpg", "jpeg", "bmp", "gif", "tiff", "webp"}
 
 def less_than(value:int, values:list):
@@ -52,26 +64,60 @@ def check_full_text(text:str) -> bool:
 	return has_punctuation or has_newline or has_tab
 
 def looks_like_path(s: str) -> bool:
-    # Trim quotes or whitespace
+    # Trim quotes and whitespace
     s = s.strip().strip('"').strip("'")
 
-    # Obvious directory or relative indicators
-    if any(x in s for x in ("/", "\\", "./", "../")):
+    # Empty string is not a path
+    if not s:
+        return False
+
+    # Invalid filename characters (Windows + general Unix)
+    invalid_chars = set('<>:"/\\|?*')
+    
+    # Check if it contains invalid filename chars
+    if any(ch in invalid_chars for ch in s):
         return True
 
-    # Windows or virtual drive/resource scheme (e.g. C:\, res:\, data:\)
+    # Check if it starts with a resource or drive scheme (like C:\, res://, data://)
     if re.match(r"^[A-Za-z0-9_]+:[\\/]", s):
         return True
 
-    # File extension (.png, .json, .tar.gz, etc.)
+    # Check for relative or absolute indicators (./, ../, /home/, etc.)
+    if re.match(r"^(?:\.*[/\\]|[/\\])", s):
+        return True
+
+    # Check if it ends with a known extension (like .png, .json, .zip, etc.)
     if re.search(r"\.[A-Za-z0-9]{1,5}$", s):
         return True
 
-    # Hidden file or folder (.env, .gitignore, etc.)
+    # Hidden files (.env, .gitignore, etc.)
     if s.startswith(".") and len(s) > 1:
         return True
 
     return False
+
+def normalize_path(p: str) -> str:
+    # Normalize slashes and remove duplicates
+    return re.sub(r"[\\/]+", "/", p.strip())
+
+def reverse_path_splice(base_path: str, prefixes: list[str]) -> str | None:
+    base_norm = normalize_path(base_path)
+
+    for prefix in prefixes:
+        pref_norm = normalize_path(prefix)
+
+        # Split the "scheme" (res:, A:, etc.) from the path part
+        base_scheme, _, base_rest = base_norm.partition(":/")
+        pref_scheme, _, pref_rest = pref_norm.partition(":/")
+
+        # Try to find where the prefix's rest matches inside the base rest
+        idx = base_rest.lower().find(pref_rest.lower())
+        if idx != -1:
+            # Splice together: new scheme + prefix rest + base tail
+            tail = base_rest[idx + len(pref_rest):]
+            return f"{pref_scheme}:/{pref_rest}{tail}"
+
+    return None
 
 def load_and_pre_process_image(
 	image_path: str,
@@ -267,18 +313,6 @@ class DateLogger:
         self.close()
         return False
 	
-import re
-import json
-import ast
-
-# Regex helpers (kept somewhat conservative)
-_RE_BOM = re.compile(r'^\ufeff')
-_RE_JS_SINGLE_LINE_COMMENT = re.compile(r'//.*?(?=\n|$)')
-_RE_JS_MULTI_LINE_COMMENT = re.compile(r'/\*.*?\*/', re.DOTALL)
-_RE_TRAILING_COMMAS = re.compile(r',\s*(?=[}\]])')  # comma before } or ]
-_RE_PY_NONE_TRUE_FALSE = re.compile(r'\b(None|True|False)\b')
-_RE_UNQUOTED_KEYS = re.compile(r'(?P<prefix>[{,\s])(?P<key>[A-Za-z_][A-Za-z0-9_\-]*)\s*:(?=\s)')
-
 def _replace_python_literals(match):
     v = match.group(1)
     if v == 'None': return 'null'
