@@ -106,7 +106,7 @@ class EnvironmentPage(ft.Column):
 	
 	def change_panel_docking(self, event):
 		width = self.app.CORE.window.width
-		if utility.less_than(width, [1000, 1500]):
+		if utility.less_than(width, [1000, 1200]):
 			
 			#Floating Dock Navigator
 			if self.navigator in self.panels.controls:

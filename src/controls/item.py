@@ -990,7 +990,7 @@ class KeyValuePair(ft.Container):
 
 		#Check Size
 		width = self.app.CORE.window.width
-		if utility.less_than(width, [1000, 1500]):
+		if utility.less_than(width, [1000, 1200]):
 			triggered = True
 
 		#Reorder
@@ -1007,7 +1007,7 @@ class KeyValuePair(ft.Container):
 					spacing = 8,
 					controls=controls
 				)
-			elif width < 1500 and len(self.app.PAGE.editor.instances.controls) > 1:
+			elif width < 1200 and len(self.app.PAGE.editor.instances.controls) > 1:
 				self.fields = ft.Column(
 					expand = True,
 					spacing = 8,
