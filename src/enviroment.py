@@ -139,6 +139,8 @@ class EnvironmentPage(ft.Column):
 					)
 				)
 				self.panels.update()
+
+				self.navigator.load_items()
 			
 			if self.navigator in self.dock.controls:
 				self.navigator.height = self.app.CORE.height - 55
@@ -176,6 +178,8 @@ class EnvironmentPage(ft.Column):
 				)
 				self.panels.update()
 
+				self.source.load_items()
+
 			if self.source in self.dock.controls:
 				self.source.height = self.app.CORE.height - 55
 				self.source.update()
@@ -206,6 +210,8 @@ class EnvironmentPage(ft.Column):
 				self.navigator.visible = nav_was_vis
 				self.navigator.update()
 
+				self.navigator.load_items()
+
 			#Floating Dock Source
 			if self.source in self.dock.controls:
 				
@@ -229,6 +235,8 @@ class EnvironmentPage(ft.Column):
 
 				self.source.visible = source_was_vis
 				self.source.update()
+
+				self.source.load_items()
 
 
 	## LOAD

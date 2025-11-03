@@ -374,7 +374,6 @@ class SourcesPanel(ft.Container):
 				self.set_items(self.searchable_items)
 		
 		self.type_select.data = ext
-		print(f"Changing Filter to {ext}")
 		self.type_select.content.content.value = f"Filter : {ext}"
 		self.type_select.update()
 
